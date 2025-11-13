@@ -1,0 +1,165 @@
+<header
+  class="theme-bg-primary border-b theme-border px-4 py-3 flex items-center justify-between shadow-sm"
+  role="banner"
+>
+  <!-- Left: Mobile menu button (hidden on desktop) -->
+  <button
+    type="button"
+    class="md:hidden p-2 rounded-md theme-text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+    aria-label="Toggle sidebar"
+  >
+    <svg
+      class="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M4 6h16M4 12h16M4 18h16"
+      />
+    </svg>
+  </button>
+
+  <!-- Center: Search (optional) -->
+  <div class="flex-1 max-w-xl mx-4 hidden md:block">
+    <div class="relative">
+      <input
+        type="search"
+        placeholder="Search..."
+        class="w-full pl-10 pr-4 py-2 border theme-border rounded-lg theme-bg-primary theme-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        aria-label="Search"
+      />
+      <svg
+        class="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        />
+      </svg>
+    </div>
+  </div>
+
+  <!-- Right: Actions -->
+  <div class="flex items-center gap-2">
+    <!-- Theme Toggle -->
+    <app-theme-toggle />
+
+    <!-- Notifications -->
+    <div class="relative">
+      <app-icon-button
+        (click)="toggleNotifications()"
+        [attr.aria-label]="'Notifications' + (notificationsCount() > 0 ? ' (' + notificationsCount() + ')' : '')"
+        [attr.aria-expanded]="showNotifications()"
+      >
+        <svg
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+          />
+        </svg>
+        @if (notificationsCount() > 0) {
+          <span
+            class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"
+            aria-hidden="true"
+          ></span>
+        }
+      </app-icon-button>
+
+      <!-- Notifications Dropdown -->
+      @if (showNotifications()) {
+        <div
+          class="absolute right-0 mt-2 w-80 theme-bg-primary theme-border rounded-lg shadow-lg py-2 z-50"
+          role="menu"
+          aria-label="Notifications"
+        >
+          <div class="px-4 py-2 border-b theme-border">
+            <h3 class="text-sm font-semibold theme-text-primary">Notifications</h3>
+          </div>
+          <div class="max-h-96 overflow-y-auto">
+            <!-- TODO: Replace with actual notifications -->
+            <div class="px-4 py-3 hover:bg-gray-100 cursor-pointer" role="menuitem">
+              <p class="text-sm theme-text-primary">New user registered</p>
+              <p class="text-xs theme-text-secondary mt-1">2 minutes ago</p>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- User Menu -->
+    <div class="relative">
+      <button
+        type="button"
+        class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        (click)="toggleUserMenu()"
+        [attr.aria-label]="'User menu for ' + currentUser().name"
+        [attr.aria-expanded]="showUserMenu()"
+      >
+        <app-avatar [name]="currentUser().name" [size]="'sm'" />
+        <span class="hidden md:block text-sm font-medium theme-text-secondary">
+          {{ currentUser().name }}
+        </span>
+        <svg
+          class="hidden md:block h-4 w-4 text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      <!-- User Dropdown -->
+      @if (showUserMenu()) {
+        <div
+          class="absolute right-0 mt-2 w-48 theme-bg-primary theme-border rounded-lg shadow-lg py-2 z-50"
+          role="menu"
+          aria-label="User menu"
+        >
+          <div class="px-4 py-2 border-b theme-border">
+            <p class="text-sm font-medium theme-text-primary">{{ currentUser().name }}</p>
+            <p class="text-xs theme-text-secondary">{{ currentUser().email }}</p>
+          </div>
+          <a
+            routerLink="/settings"
+            class="block px-4 py-2 text-sm theme-text-secondary hover:bg-gray-100"
+            role="menuitem"
+            (click)="showUserMenu.set(false)"
+          >
+            Settings
+          </a>
+          <button
+            type="button"
+            class="w-full text-left px-4 py-2 text-sm theme-text-secondary hover:bg-gray-100"
+            role="menuitem"
+            (click)="logout(); showUserMenu.set(false)"
+          >
+            Logout
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</header>
+

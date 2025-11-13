@@ -1,0 +1,53 @@
+<aside
+  class="w-64 theme-bg-primary border-r theme-border flex flex-col"
+  role="navigation"
+  aria-label="Main navigation"
+>
+  <!-- Logo/Brand -->
+  <div class="p-6 border-b theme-border">
+    <h1 class="text-xl font-bold theme-text-primary">Admin Dashboard</h1>
+  </div>
+
+  <!-- Navigation Items -->
+  <nav class="flex-1 p-4 space-y-1" aria-label="Main navigation">
+    @for (item of navItems; track item.route) {
+      <a
+        [routerLink]="item.route"
+        routerLinkActive="bg-primary-50 text-primary-700 border-primary-500"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 px-4 py-3 rounded-lg theme-text-secondary hover:bg-gray-100 hover:text-gray-900 transition-colors border-l-4 border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        [attr.aria-current]="isActive(item.route) ? 'page' : null"
+      >
+        <svg
+          class="h-5 w-5 flex-shrink-0"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          [attr.aria-hidden]="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            [attr.d]="item.icon"
+          />
+        </svg>
+        <span class="font-medium theme-text-primary">{{ item.label }}</span>
+        @if (item.badge && item.badge > 0) {
+          <span
+            class="ml-auto px-2 py-0.5 text-xs font-semibold rounded-full bg-primary-100 text-primary-700"
+            [attr.aria-label]="item.badge + ' notifications'"
+          >
+            {{ item.badge }}
+          </span>
+        }
+      </a>
+    }
+  </nav>
+
+  <!-- Footer (optional) -->
+  <div class="p-4 border-t theme-border">
+    <p class="text-xs theme-text-secondary text-center">v1.0.0</p>
+  </div>
+</aside>
+

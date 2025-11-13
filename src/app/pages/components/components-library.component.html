@@ -1,0 +1,237 @@
+<div class="space-y-8 p-6">
+  <!-- Header -->
+  <div>
+    <h1 class="text-3xl font-bold text-gray-900">Component Library</h1>
+    <p class="mt-2 text-gray-600">Browse and test all available shared components</p>
+  </div>
+
+  <!-- Buttons Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Buttons</h2>
+    <app-card>
+      <div class="space-y-4">
+        <div class="flex flex-wrap gap-4">
+          <app-button variant="primary">Primary Button</app-button>
+          <app-button variant="secondary">Secondary Button</app-button>
+          <app-button variant="danger">Danger Button</app-button>
+          <app-button variant="ghost">Ghost Button</app-button>
+        </div>
+        <div class="flex flex-wrap gap-4">
+          <app-button variant="primary" size="sm">Small</app-button>
+          <app-button variant="primary" size="md">Medium</app-button>
+          <app-button variant="primary" size="lg">Large</app-button>
+        </div>
+        <div class="flex flex-wrap gap-4">
+          <app-button variant="primary" [disabled]="true">Disabled</app-button>
+          <app-button variant="primary" [loading]="true">Loading</app-button>
+        </div>
+      </div>
+    </app-card>
+  </section>
+
+  <!-- Icon Buttons Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Icon Buttons</h2>
+    <app-card>
+      <div class="flex flex-wrap gap-4">
+        <app-icon-button>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+        </app-icon-button>
+        <app-icon-button variant="secondary">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </app-icon-button>
+        <app-icon-button variant="danger">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </app-icon-button>
+      </div>
+    </app-card>
+  </section>
+
+  <!-- Badges Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Badges</h2>
+    <app-card>
+      <div class="flex flex-wrap gap-4 items-center">
+        <app-badge>Default</app-badge>
+        <app-badge variant="primary">Primary</app-badge>
+        <app-badge variant="success">Success</app-badge>
+        <app-badge variant="warning">Warning</app-badge>
+        <app-badge variant="danger">Danger</app-badge>
+      </div>
+    </app-card>
+  </section>
+
+  <!-- Avatars Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Avatars</h2>
+    <app-card>
+      <div class="flex flex-wrap gap-4 items-center">
+        <app-avatar name="John Doe" size="sm" />
+        <app-avatar name="Jane Smith" size="md" />
+        <app-avatar name="Bob Johnson" size="lg" />
+        <app-avatar name="Alice Brown" size="xl" />
+      </div>
+    </app-card>
+  </section>
+
+  <!-- Cards Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Cards</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <app-card>
+        <p class="text-gray-600">Basic card with content</p>
+      </app-card>
+      <app-card title="Card with Title">
+        <p class="text-gray-600">Card with a title</p>
+      </app-card>
+      <app-card title="Card with Subtitle" subtitle="This is a subtitle">
+        <p class="text-gray-600">Card with title and subtitle</p>
+      </app-card>
+    </div>
+  </section>
+
+  <!-- Form Controls Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Form Controls</h2>
+    <app-card>
+      <form [formGroup]="demoForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <app-form-field label="Text Input" [required]="true" inputId="textInput">
+          <app-input
+            id="textInput"
+            formControlName="textInput"
+            type="text"
+            placeholder="Enter text"
+          />
+        </app-form-field>
+
+        <app-form-field label="Email Input" [required]="true" inputId="emailInput">
+          <app-input
+            id="emailInput"
+            formControlName="emailInput"
+            type="email"
+            placeholder="Enter email"
+          />
+        </app-form-field>
+
+        <app-form-field label="Select" inputId="selectInput">
+          <app-select
+            id="selectInput"
+            formControlName="selectInput"
+            [options]="selectOptions"
+            placeholder="Select an option"
+          />
+        </app-form-field>
+
+        <app-form-field label="Textarea" inputId="textareaInput">
+          <app-textarea
+            id="textareaInput"
+            formControlName="textareaInput"
+            placeholder="Enter your message"
+            [rows]="4"
+          />
+        </app-form-field>
+
+        <div class="mb-4">
+          <app-checkbox
+            formControlName="checkboxInput"
+            label="I agree to the terms and conditions"
+          />
+        </div>
+
+        <app-form-field label="Radio Group" inputId="radioInput">
+          <app-radio-group
+            id="radioInput"
+            formControlName="radioInput"
+            [options]="radioOptions"
+            direction="horizontal"
+          />
+        </app-form-field>
+
+        <div class="flex gap-4">
+          <app-button type="submit" variant="primary">Submit</app-button>
+          <app-button type="button" variant="secondary">Cancel</app-button>
+        </div>
+      </form>
+    </app-card>
+  </section>
+
+  <!-- Table Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Table</h2>
+    <app-card>
+      <app-table
+        [columns]="tableColumns"
+        [data]="tableData"
+        [pagination]="false"
+        [ariaLabel]="'Users table'"
+      />
+    </app-card>
+  </section>
+
+  <!-- Data Table Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Data Table (Enhanced)</h2>
+    <app-data-table
+      [columns]="tableColumns"
+      [data]="tableData"
+      [searchable]="true"
+      [showFilters]="false"
+      [pagination]="false"
+      [ariaLabel]="'Enhanced users table'"
+    />
+  </section>
+
+  <!-- Chart Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Charts</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <app-chart-wrapper
+        title="Line Chart"
+        subtitle="Sample line chart"
+        [chartData]="chartData"
+        [chartOptions]="chartOptions"
+        chartType="line"
+        height="300px"
+        [showLegend]="true"
+      />
+      <app-chart-wrapper
+        title="Bar Chart"
+        subtitle="Sample bar chart"
+        [chartData]="chartData"
+        [chartOptions]="chartOptions"
+        chartType="bar"
+        height="300px"
+        [showLegend]="true"
+      />
+    </div>
+  </section>
+
+  <!-- Modal Section -->
+  <section>
+    <h2 class="text-2xl font-semibold text-gray-900 mb-4">Modal</h2>
+    <app-card>
+      <app-button variant="primary" (onClick)="openModal()">
+        Open Modal
+      </app-button>
+    </app-card>
+  </section>
+
+  <app-modal
+    [isOpen]="showModal()"
+    title="Example Modal"
+    description="This is an example modal dialog"
+    (close)="closeModal()"
+    (confirm)="closeModal()"
+  >
+    <p class="text-gray-600">
+      This is the modal content. You can put any content here.
+    </p>
+  </app-modal>
+</div>
+
