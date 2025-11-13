@@ -16,7 +16,48 @@
       {{ error() }}
     </div>
   }
+<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-wrap gap-2">
+      @for (option of rangeOptions; track option.value) {
+        <button
+          type="button"
+          class="rounded-full border px-4 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-primary-500"
+          [class.bg-primary-600]="performanceRange() === option.value"
+          [class.text-white]="performanceRange() === option.value"
+          [class.border-primary-600]="performanceRange() === option.value"
+          [class.border-gray-200]="performanceRange() !== option.value"
+          [class.text-gray-600]="performanceRange() !== option.value"
+          (click)="setRange(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
 
+    <div class="flex flex-wrap items-center gap-2">
+      <input
+        type="date"
+        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        [value]="customStart() || ''"
+        (change)="updateCustomStart($any($event.target)?.value || '')"
+      />
+      <span class="text-sm text-gray-400">to</span>
+      <input
+        type="date"
+        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        [value]="customEnd() || ''"
+        (change)="updateCustomEnd($any($event.target)?.value || '')"
+      />
+      <button
+        type="button"
+        class="rounded-md bg-primary-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-300 disabled:text-gray-500"
+        [disabled]="!isCustomRangeValid()"
+        (click)="applyCustomRange()"
+      >
+        Apply
+      </button>
+    </div>
+  </div>
   <!-- Stats Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <app-card>
