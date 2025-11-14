@@ -28,7 +28,6 @@ type NumericDashboardKey =
   | 'Heavy Drops'
   | 'Walkup Drop Count'
   | 'Double Drop Count'
-  | 'TotalDrops'
   | 'Amount';
 
 interface DashboardTableColumn {
@@ -37,6 +36,7 @@ interface DashboardTableColumn {
   type?: 'text' | 'number' | 'date';
   numeric?: boolean;
 }
+type PerformanceRange = 'today' | 'week' | 'month' | 'year' | 'custom';
 
 interface EmployeeAggregate {
   totalDrops: number;
@@ -104,7 +104,7 @@ export class DashboardComponent implements OnInit {
   filteredTableData = computed(() => {
     const filters = this.tableFilters();
     const sort = this.sortState();
-    const records = this.dashboardData();
+    const records = this.filteredRecords();
 
     const filtered = records.filter((record) =>
       this.tableColumns.every((column) => {
@@ -253,27 +253,27 @@ export class DashboardComponent implements OnInit {
   public averageDropsTrendChartType: ChartType = 'line';
 
   totalDrops = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Total Drops'),
+    this.sumNumeric(this.filteredRecords(), 'Total Drops'),
   );
   multiDrops = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Multi Drops'),
+    this.sumNumeric(this.filteredRecords(), 'Multi Drops'),
   );
   heavyDrops = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Heavy Drops'),
+    this.sumNumeric(this.filteredRecords(), 'Heavy Drops'),
   );
   walkupDropCount = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Walkup Drop Count'),
+    this.sumNumeric(this.filteredRecords(), 'Walkup Drop Count'),
   );
   totalAmount = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Amount'),
+    this.sumNumeric(this.filteredRecords(), 'Amount'),
   );
   doubleDropCount = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Double Drop Count'),
+    this.sumNumeric(this.filteredRecords(), 'Double Drop Count'),
   );
-  recordsCount = computed(() => this.dashboardData().length);
+  recordsCount = computed(() => this.filteredRecords().length);
 
   recentActivities = computed(() => {
-    const records = this.dashboardData();
+    const records = this.filteredRecords();
     return records.slice(0, 5).map((record, index) => ({
       id:
         record.Timestamp ||
@@ -309,7 +309,7 @@ export class DashboardComponent implements OnInit {
   }
 
   topPerformer = computed(() => {
-    const records = this.dashboardData();
+    const records = this.filteredRecords();
     if (!records.length) {
       return null;
     }
@@ -339,7 +339,7 @@ export class DashboardComponent implements OnInit {
   });
 
   underperformingEmployees = computed(() => {
-    const records = this.dashboardData();
+    const records = this.filteredRecords();
     if (!records.length) {
       return [];
     }
@@ -723,6 +723,14 @@ export class DashboardComponent implements OnInit {
         label: 'Double Drops',
         value: this.sumNumeric(records, 'Double Drop Count'),
       },
+       {
+        label: 'Single Drops',
+        value: this.sumNumeric(records, 'Total Drops') -
+               this.sumNumeric(records, 'Multi Drops') -
+               this.sumNumeric(records, 'Heavy Drops') -
+               this.sumNumeric(records, 'Walkup Drop Count') -
+               this.sumNumeric(records, 'Double Drop Count'),
+      },
     ];
 
     this.dropTypeChartData = this.createPieChartData(
@@ -730,9 +738,10 @@ export class DashboardComponent implements OnInit {
       dropTypeTotals.map((item) => item.value),
       [
         'rgba(59, 130, 246, 0.8)',
-        'rgba(16, 185, 129, 0.8)',
+        'rgba(126, 156, 146, 0.8)',
         'rgba(245, 158, 11, 0.8)',
         'rgba(239, 68, 68, 0.8)',
+        'rgba(27, 244, 172, 0.9)',
       ],
     );
 
@@ -819,5 +828,138 @@ export class DashboardComponent implements OnInit {
 
     return map;
   }
+
+ //#region Performance Filter
+performanceRange = signal<PerformanceRange>('month');
+customStart = signal<string | null>(null);
+customEnd = signal<string | null>(null);
+
+readonly rangeOptions: { label: string; value: PerformanceRange }[] = [
+  { label: 'Today', value: 'today' },
+  { label: 'This Week', value: 'week' },
+  { label: 'This Month', value: 'month' },
+  { label: 'This Year', value: 'year' },
+];
+
+filteredRecords = computed(() => {
+  const records = this.dashboardData();
+  const range = this.performanceRange();
+  const customStart = this.customStart();
+  const customEnd = this.customEnd();
+
+  const { startDate, endDate } = this.getRangeBounds(range, customStart, customEnd);
+  console.log('Filtering Records:', { range, customStart, customEnd, startDate, endDate });
+
+  if (!startDate && !endDate) {
+    return records;
+  }
+
+  return records.filter((record) => {
+    const recordDate = this.parseRecordDate(record);
+    console.log('Record:', record, { recordDate, startDate, endDate });
+
+    if (!recordDate) {
+      return false;
+    }
+
+    if (startDate && recordDate < startDate) {
+      return false;
+    }
+    if (endDate && recordDate > endDate) {
+      return false;
+    }
+
+    return true;
+  });
+});
+
+private getRangeBounds(
+  range: PerformanceRange,
+  customStart: string | null,
+  customEnd: string | null,
+): { startDate: Date | null; endDate: Date | null } {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (range) {
+    case 'today':
+      return {
+        startDate: todayStart,
+        endDate: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1),
+      };
+    case 'week': {
+      const start = new Date(todayStart);
+      start.setDate(start.getDate() - 6);
+      return { startDate: start, endDate: now };
+    }
+    case 'month':
+      return {
+        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+        endDate: now,
+      };
+    case 'year':
+      return {
+        startDate: new Date(now.getFullYear(), 0, 1),
+        endDate: now,
+      };
+    case 'custom': {
+       const startDate = customStart ? new Date(new Date(customStart).setHours(0, 0, 0, 0)) : null;
+        const endDate = customEnd ? new Date(new Date(customEnd).setHours(0, 0, 0, 0)) : null;
+        return { startDate, endDate };
+    }
+    default:
+      return { startDate: null, endDate: null };
+  }
+}
+
+private parseRecordDate(record: DashboardDataRecord): Date | null {
+  const source = record.DATE || record.Timestamp;
+  if (!source) {
+    return null;
+  }
+  const date = new Date(source);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date;
+}
+
+applyCustomRange(): void {
+  if (this.isCustomRangeValid()) {
+    this.performanceRange.set('custom');
+  }
+}
+
+isCustomRangeValid = computed(() => {
+  const start = this.customStart();
+  const end = this.customEnd();
+
+  if (!start || !end) {
+    return false;
+  }
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  return startDate <= endDate;
+});
+
+setRange(range: PerformanceRange): void {
+  this.performanceRange.set(range);
+  if (range !== 'custom') {
+    this.customStart.set(null);
+    this.customEnd.set(null);
+  }
+
+  
+}
+
+ updateCustomStart(value: string): void {
+    this.customStart.set(value || null);
+  }
+  updateCustomEnd(value: string): void {
+    this.customEnd.set(value || null);
+  }
+//#endregion
+
 }
 
