@@ -32,6 +32,7 @@ interface EmployeeSummary {
   dropTypes: Record<string, number>;
   shifts: string[];
   amount: number;
+  averageAmountPerDay: number;
   multiDrops: number;
   heavyDrops: number;
   walkupDrops: number;
@@ -92,12 +93,12 @@ export class PerformancePanelComponent {
       return records;
     }
 
-    return records.filter((record) => {
+    var data = records.filter((record) => {
       const recordDate = this.parseRecordDate(record);
       if (!recordDate) {
         return false;
       }
-
+ console.log('startDate:', startDate, 'endDate:', endDate, 'recordDate:', recordDate);
       if (startDate && recordDate < startDate) {
         return false;
       }
@@ -107,6 +108,8 @@ export class PerformancePanelComponent {
 
       return true;
     });
+    console.log('Filtered Records:', data);
+    return data;
   });
 
   employeeSummaries = computed<EmployeeSummary[]>(() => {
@@ -209,6 +212,7 @@ export class PerformancePanelComponent {
       .map((entry, index) => {
         const daysCovered = entry.dailyTotals.size || 1;
         const averagePerDay = entry.totalDrops / daysCovered;
+        const averageAmountPerDay = entry.amount / daysCovered;
         const trendDirection: EmployeeSummary['trendDirection'] =
           entry.totalDrops > averageDrops
             ? 'up'
@@ -223,6 +227,7 @@ export class PerformancePanelComponent {
           avatarColor: this.avatarPalette[index % this.avatarPalette.length],
           totalDrops: entry.totalDrops,
           averageDropsPerDay: averagePerDay,
+          averageAmountPerDay: averageAmountPerDay,
           hireDate: entry.hireDate,
           percentageOfTotal: totalDrops ? entry.totalDrops / totalDrops : 0,
           trendDirection,
@@ -383,6 +388,8 @@ export class PerformancePanelComponent {
 
     const startDate = new Date(start);
     const endDate = new Date(end);
+     startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
     return startDate <= endDate;
   });
 
@@ -427,6 +434,8 @@ export class PerformancePanelComponent {
 
   updateCustomStart(value: string): void {
     this.customStart.set(value || null);
+     this.customStart.set(value || null);
+    
   }
 
   updateCustomEnd(value: string): void {
@@ -471,8 +480,8 @@ export class PerformancePanelComponent {
           endDate: now,
         };
       case 'custom': {
-        const startDate = customStart ? new Date(customStart) : null;
-        const endDate = customEnd ? new Date(customEnd) : null;
+        const startDate = customStart ? new Date(new Date(customStart).setHours(0, 0, 0, 0)) : null;
+        const endDate = customEnd ? new Date(new Date(customEnd).setHours(0, 0, 0, 0)) : null;
         return { startDate, endDate };
       }
       default:

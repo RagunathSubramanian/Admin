@@ -104,7 +104,7 @@ export class DashboardComponent implements OnInit {
   filteredTableData = computed(() => {
     const filters = this.tableFilters();
     const sort = this.sortState();
-    const records = this.dashboardData();
+    const records = this.filteredRecords();
 
     const filtered = records.filter((record) =>
       this.tableColumns.every((column) => {
@@ -253,27 +253,27 @@ export class DashboardComponent implements OnInit {
   public averageDropsTrendChartType: ChartType = 'line';
 
   totalDrops = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Total Drops'),
+    this.sumNumeric(this.filteredRecords(), 'Total Drops'),
   );
   multiDrops = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Multi Drops'),
+    this.sumNumeric(this.filteredRecords(), 'Multi Drops'),
   );
   heavyDrops = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Heavy Drops'),
+    this.sumNumeric(this.filteredRecords(), 'Heavy Drops'),
   );
   walkupDropCount = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Walkup Drop Count'),
+    this.sumNumeric(this.filteredRecords(), 'Walkup Drop Count'),
   );
   totalAmount = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Amount'),
+    this.sumNumeric(this.filteredRecords(), 'Amount'),
   );
   doubleDropCount = computed(() =>
-    this.sumNumeric(this.dashboardData(), 'Double Drop Count'),
+    this.sumNumeric(this.filteredRecords(), 'Double Drop Count'),
   );
-  recordsCount = computed(() => this.dashboardData().length);
+  recordsCount = computed(() => this.filteredRecords().length);
 
   recentActivities = computed(() => {
-    const records = this.dashboardData();
+    const records = this.filteredRecords();
     return records.slice(0, 5).map((record, index) => ({
       id:
         record.Timestamp ||
@@ -309,7 +309,7 @@ export class DashboardComponent implements OnInit {
   }
 
   topPerformer = computed(() => {
-    const records = this.dashboardData();
+    const records = this.filteredRecords();
     if (!records.length) {
       return null;
     }
@@ -339,7 +339,7 @@ export class DashboardComponent implements OnInit {
   });
 
   underperformingEmployees = computed(() => {
-    const records = this.dashboardData();
+    const records = this.filteredRecords();
     if (!records.length) {
       return [];
     }
@@ -903,9 +903,9 @@ private getRangeBounds(
         endDate: now,
       };
     case 'custom': {
-      const startDate = customStart ? new Date(customStart) : null;
-      const endDate = customEnd ? new Date(customEnd) : null;
-      return { startDate, endDate };
+       const startDate = customStart ? new Date(new Date(customStart).setHours(0, 0, 0, 0)) : null;
+        const endDate = customEnd ? new Date(new Date(customEnd).setHours(0, 0, 0, 0)) : null;
+        return { startDate, endDate };
     }
     default:
       return { startDate: null, endDate: null };
