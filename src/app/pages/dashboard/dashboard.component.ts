@@ -270,6 +270,14 @@ export class DashboardComponent implements OnInit {
   doubleDropCount = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Double Drop Count'),
   );
+  activeEmployee = computed(() =>{
+    const uniqueRecords = new Set(this.filteredRecords().map((record) => record.NAME)); // Use a unique field like 'NAME'
+    return uniqueRecords.size;
+});
+dailyTotals = computed(() =>{
+    const uniqueRecords = new Set(this.filteredRecords().map((record) => record.DATE)); // Use a unique field like 'NAME'
+    return uniqueRecords.size;
+});
   recordsCount = computed(() => this.filteredRecords().length);
 
   recentActivities = computed(() => {
@@ -848,7 +856,6 @@ filteredRecords = computed(() => {
   const customEnd = this.customEnd();
 
   const { startDate, endDate } = this.getRangeBounds(range, customStart, customEnd);
-  console.log('Filtering Records:', { range, customStart, customEnd, startDate, endDate });
 
   if (!startDate && !endDate) {
     return records;
@@ -856,7 +863,6 @@ filteredRecords = computed(() => {
 
   return records.filter((record) => {
     const recordDate = this.parseRecordDate(record);
-    console.log('Record:', record, { recordDate, startDate, endDate });
 
     if (!recordDate) {
       return false;
