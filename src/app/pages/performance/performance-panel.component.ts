@@ -15,8 +15,16 @@ import {
 } from '../dashboard/dashboard-data.model';
 import { CardComponent } from '../../shared/components/card.component';
 import { ChartWrapperComponent } from '../../shared/components/chart-wrapper.component';
+//import { DataTableComponent } from '@app/shared/components';
 
 type PerformanceRange = 'today' | 'week' | 'month' | 'year' | 'custom';
+
+interface DashboardTableColumn {
+  key: keyof DashboardDataRecord;
+  label: string;
+  type?: 'text' | 'number' | 'date';
+  numeric?: boolean;
+}
 
 interface EmployeeSummary {
   id: string;
@@ -43,7 +51,9 @@ interface EmployeeSummary {
 @Component({
   selector: 'app-performance-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardComponent, ChartWrapperComponent],
+  imports: [CommonModule, FormsModule, CardComponent, ChartWrapperComponent,
+   //  DataTableComponent
+    ],
   templateUrl: './performance-panel.component.html',
 })
 export class PerformancePanelComponent {
@@ -60,9 +70,12 @@ export class PerformancePanelComponent {
 
   private recordsSignal = signal<DashboardDataModel>([]);
 
+   tabledata = signal<DashboardDataModel>([]);
+
   @Input()
   set records(value: DashboardDataModel) {
     this.recordsSignal.set(Array.isArray(value) ? value : []);
+        this.tabledata.set( this.filteredTableData() || []);
   }
 
   performanceRange = signal<PerformanceRange>('month');
@@ -76,6 +89,8 @@ export class PerformancePanelComponent {
     { label: 'This Month', value: 'month' },
     { label: 'This Year', value: 'year' },
   ];
+
+
 
   filteredRecords = computed(() => {
     const records = this.recordsSignal();
@@ -98,7 +113,7 @@ export class PerformancePanelComponent {
       if (!recordDate) {
         return false;
       }
- console.log('startDate:', startDate, 'endDate:', endDate, 'recordDate:', recordDate);
+
       if (startDate && recordDate < startDate) {
         return false;
       }
@@ -108,7 +123,8 @@ export class PerformancePanelComponent {
 
       return true;
     });
-    console.log('Filtered Records:', data);
+
+    
     return data;
   });
 
@@ -219,7 +235,6 @@ export class PerformancePanelComponent {
             : entry.totalDrops < averageDrops
             ? 'down'
             : 'flat';
-
         return {
           id: entry.id,
           name: entry.name,
@@ -420,6 +435,7 @@ export class PerformancePanelComponent {
 
   setRange(range: PerformanceRange): void {
     this.performanceRange.set(range);
+    this.tabledata.set(this.filteredTableData() || []); 
     if (range !== 'custom') {
       this.customStart.set(null);
       this.customEnd.set(null);
@@ -444,6 +460,8 @@ export class PerformancePanelComponent {
 
   selectEmployee(id: string): void {
     this.selectedEmployeeId.set(id);
+    this.tabledata.set(this.filteredTableData() || []);
+
   }
 
   trackByEmployeeId(index: number, employee: EmployeeSummary): string {
@@ -656,6 +674,213 @@ export class PerformancePanelComponent {
         return 'text-gray-500';
     }
   }
+
+
+  //#region  Dattable 
+  recordsCount = computed(() => this.filteredRecords().length);
+  readonly tableColumns: DashboardTableColumn[] = [
+      { key: 'DATE', label: 'Date', type: 'text' },
+      { key: 'NAME', label: 'Name', type: 'text' },
+      { key: 'Shift', label: 'Shift', type: 'text' },
+      { key: 'Total Drops', label: 'Total Drops', type: 'number', numeric: true },
+      { key: 'Multi Drops', label: 'Multi Drops', type: 'number', numeric: true },
+      { key: 'Heavy Drops', label: 'Heavy Drops', type: 'number', numeric: true },
+      {
+        key: 'Walkup Drop Count',
+        label: 'Walkup Drops',
+        type: 'number',
+        numeric: true,
+      },
+      {
+        key: 'Double Drop Count',
+        label: 'Double Drops',
+        type: 'number',
+        numeric: true,
+      },
+      { key: 'Amount', label: 'Amount', type: 'number', numeric: true },
+    ];
+
+    readonly BydaytableColumns: DashboardTableColumn[] = [
+      { key: 'DATE', label: 'Date', type: 'text' },
+      { key: 'NAME', label: 'Name', type: 'text' },
+      { key: 'Total Drops', label: 'Total Drops', type: 'number', numeric: true },
+      { key: 'Multi Drops', label: 'Multi Drops', type: 'number', numeric: true },
+      { key: 'Heavy Drops', label: 'Heavy Drops', type: 'number', numeric: true },
+      {
+        key: 'Walkup Drop Count',
+        label: 'Walkup Drops',
+        type: 'number',
+        numeric: true,
+      },
+      {
+        key: 'Double Drop Count',
+        label: 'Double Drops',
+        type: 'number',
+        numeric: true,
+      },
+      { key: 'Amount', label: 'Amount', type: 'number', numeric: true },
+    ];
+  
+    tableFilters = signal<Record<string, string>>(
+      this.tableColumns.reduce((acc, column) => {
+        acc[column.key as string] = '';
+        return acc;
+      }, {} as Record<string, string>),
+    );
+    sortState = signal<{
+      key: DashboardTableColumn['key'];
+      direction: 'asc' | 'desc';
+    } | null>(null);
+
+
+
+    filteredTableData = computed(() => {
+
+      return this.selectedEmployee()?.records || [];
+      // const filters = this.tableFilters();
+      // const sort = this.sortState();
+      // const employee = this.selectedEmployee();
+      // const records = employee?.records || [];
+      
+  
+      // const filtered = records.filter((record) =>
+      //   this.tableColumns.every((column) => {
+      //     const filterValue = filters[column.key as string];
+      //     if (!filterValue) {
+      //       return true;
+      //     }
+  
+      //     const cellValue = record[column.key];
+      //     if (cellValue === null || cellValue === undefined) {
+      //       return false;
+      //     }
+  
+      //     if (column.type === 'number') {
+      //       const numericFilter = Number(filterValue);
+      //       if (Number.isNaN(numericFilter)) {
+      //         return true;
+      //       }
+      //       return Number(cellValue) === numericFilter;
+      //     }
+  
+      //     const normalizedCell = String(cellValue).toLowerCase();
+      //     return normalizedCell.includes(filterValue.toLowerCase());
+      //   }),
+      // );
+  
+      // if (!sort) {
+      //   return filtered;
+      // }
+  
+      // const columnMeta = this.tableColumns.find(
+      //   (column) => column.key === sort.key,
+      // );
+  
+      // return [...filtered].sort((a, b) => {
+      //   const aValue = a[sort.key];
+      //   const bValue = b[sort.key];
+  
+      //   if (columnMeta?.numeric) {
+      //     const aNumber = this.ensureNumber(aValue);
+      //     const bNumber = this.ensureNumber(bValue);
+      //     return sort.direction === 'asc'
+      //       ? aNumber - bNumber
+      //       : bNumber - aNumber;
+      //   }
+  
+      //   const aString = String(aValue ?? '');
+      //   const bString = String(bValue ?? '');
+      //   const comparison = aString.localeCompare(bString, undefined, {
+      //     sensitivity: 'base',
+      //     numeric: true,
+      //   });
+  
+      //   return sort.direction === 'asc' ? comparison : -comparison;
+      // });
+    });
+
+
+updateFilter(columnKey: DashboardTableColumn['key'], value: string): void {
+    this.tableFilters.update((filters) => ({
+      ...filters,
+      [columnKey as string]: value,
+    }));
+  }
+
+  clearFilters(): void {
+    this.tableFilters.set(
+      this.tableColumns.reduce((acc, column) => {
+        acc[column.key as string] = '';
+        return acc;
+      }, {} as Record<string, string>),
+    );
+  }
+
+  toggleSort(columnKey: DashboardTableColumn['key']): void {
+    this.sortState.update((current) => {
+      if (!current || current.key !== columnKey) {
+        return { key: columnKey, direction: 'asc' };
+      }
+
+      if (current.direction === 'asc') {
+        return { key: columnKey, direction: 'desc' };
+      }
+
+      return null;
+    });
+  }
+
+  getSortDirection(columnKey: DashboardTableColumn['key']): 'asc' | 'desc' | null {
+    return this.sortState()?.key === columnKey ? this.sortState()!.direction : null;
+  }
+
+  getFilterValue(columnKey: DashboardTableColumn['key']): string {
+    return this.tableFilters()[columnKey as string] ?? '';
+  }
+
+  formatCellValue(
+    record: DashboardDataRecord,
+    column: DashboardTableColumn,
+  ): string {
+    const value = record[column.key];
+    if (value === null || value === undefined) {
+      return '—';
+    }
+
+    if (column.key === 'Amount') {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: 'SGD',
+        maximumFractionDigits: 0,
+      }).format(this.ensureNumber(value));
+    }
+
+    if (column.key === 'Timestamp') {
+      return this.formatTimestamp(String(value));
+    }
+
+    return String(value);
+  }
+
+  trackByRecord = (index: number, record: DashboardDataRecord) =>
+    record.Timestamp || record.FIN || index;
+  
+  private formatTimestamp(timestamp?: string): string {
+    if (!timestamp) {
+      return 'Unknown time';
+    }
+
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+      return timestamp;
+    }
+
+    return date.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  }
+  //#endregion
 }
 
  
