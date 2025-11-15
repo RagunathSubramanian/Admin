@@ -66,6 +66,9 @@ Navigate to `http://localhost:4200/`
 ### Build for Production
 
 ```bash
+
+ng build --configuration=production --base-href "/Admin/"   
+npx angular-cli-ghpages --dir=dist/angular-admin-dashboard/browser --branch=gh-pages
 npm run build:prod
 ```
 
