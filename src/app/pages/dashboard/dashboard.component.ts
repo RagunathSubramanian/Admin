@@ -384,7 +384,7 @@ dailyTotals = computed(() =>{
       )
       .subscribe({
         next: (data) => {
-          this.dashboardData.set(this.convertSheetToJson(data));
+          this.dashboardData.set(data);
          
           this.updateCharts(this.dashboardData());
         },
@@ -395,25 +395,7 @@ dailyTotals = computed(() =>{
         },
       });
   }
- convertSheetToJson(sheetData: any): any[] {
-  const values: any[][] = sheetData && Array.isArray(sheetData.values) ? sheetData.values : [];
-  if (values.length === 0) return [];
 
-  const headers = values[0].map(h => h ? String(h).trim() : '');
-  const dataRows = values.slice(1); // skip headers
-
-  // Map each row to an object using headers
-  return dataRows.map(row => {
-    const obj: any = {};
-    headers.forEach((key, i) => {
-      if(row[i] !== undefined && row[i] !== null && String(row[i]).trim() !== '') {
-      obj[key || `col_${i+1}`] = row[i] !== undefined ? row[i] : '';
-      }
-    });
-    
-    return obj;
-  });
-}
   private updateCharts(records: DashboardDataModel): void {
     if (!records.length) {
       this.lineChartData = this.createLineChartData([], []);
