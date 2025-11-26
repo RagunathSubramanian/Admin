@@ -171,18 +171,18 @@
     <app-chart-wrapper
       title="Monthly Drops"
       subtitle="Aggregated by month"
-      [chartData]="lineChartData"
+      [chartData]="lineChartData()"
       [chartOptions]="lineChartOptions"
       [chartType]="lineChartType"
       height="256px"
     />
 
     <app-chart-wrapper
-      title="Walkup Drops by Shift"
-      subtitle="Latest reporting period"
-      [chartData]="barChartData"
-      [chartOptions]="barChartOptions"
-      [chartType]="barChartType"
+      title="Daily Drops Trends"
+      subtitle="Total drops per day"
+      [chartData]="dailyTrendsChartData()"
+      [chartOptions]="dailyTrendsChartOptions"
+      [chartType]="dailyTrendsChartType"
       height="256px"
     />
   </div>
@@ -200,7 +200,7 @@
       <app-chart-wrapper
         title="Drops per Employee"
         subtitle="Total drops by team member"
-        [chartData]="dropsPerEmployeeChartData"
+        [chartData]="dropsPerEmployeeChartData()"
         [chartOptions]="dropsPerEmployeeChartOptions"
         [chartType]="dropsPerEmployeeChartType"
         height="256px"
@@ -209,7 +209,7 @@
       <app-chart-wrapper
         title="Drop Type Distribution"
         subtitle="Share of drop categories"
-        [chartData]="dropTypeChartData"
+        [chartData]="dropTypeChartData()"
         [chartOptions]="dropTypeChartOptions"
         [chartType]="dropTypeChartType"
         height="256px"
@@ -218,14 +218,14 @@
       <app-chart-wrapper
         title="Average Drops per Employee"
         subtitle="Monthly average trend"
-        [chartData]="averageDropsTrendChartData"
+        [chartData]="averageDropsTrendChartData()"
         [chartOptions]="averageDropsTrendChartOptions"
         [chartType]="averageDropsTrendChartType"
         height="256px"
       />
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <app-card title="Top Performer" subtitle="Highest total drops across all shifts">
         @if (topPerformer()) {
           <div class="space-y-2">
@@ -293,9 +293,25 @@
           <p class="text-sm text-gray-500">All employees are meeting the target.</p>
         }
       </app-card>
+
+
     </div>
   </div>
-
+  <app-card
+  title="Grouped Summary"
+  subtitle="Grouped by Date"
+  padding="sm"
+>
+  <app-data-table
+    [columns]="groupedTableColumns"
+    [data]="groupedDataSignal"
+    [pagination]="true"
+    [pageSize]="groupedTablePageSize"
+    [showToolbar]="false"
+    [showFilters]="true"
+    [searchable]="false"
+  />
+</app-card>
   <!-- Drops Data Table -->
   <app-card
     title="Drop Records"
