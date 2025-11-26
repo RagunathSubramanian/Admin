@@ -568,14 +568,29 @@ export class PerformancePanelComponent {
   }
 
   private formatDateKey(date: Date): string {
-    return date.toISOString().split('T')[0];
+    // Use local date components to avoid UTC timezone shifting the calendar day,
+    // which can make a local 2-Jan appear as 1-Jan in the chart labels.
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private formatDisplayDate(key: string): string {
-    const date = new Date(key);
-    if (Number.isNaN(date.getTime())) {
+    // Parse our YYYY-MM-DD keys as a local date so labels stay aligned with the
+    // original data instead of being shifted by timezone handling.
+    const parts = key.split('-');
+    if (parts.length !== 3) {
       return key;
     }
+    const [yearStr, monthStr, dayStr] = parts;
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
+    if (!year || !month || !day) {
+      return key;
+    }
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
