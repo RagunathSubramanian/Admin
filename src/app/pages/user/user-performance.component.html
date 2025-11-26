@@ -1,0 +1,25 @@
+<div class="space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">My Performance</h1>
+    <p class="mt-1 text-sm text-gray-500">
+      View your drops, trends, and performance metrics.
+    </p>
+  </div>
+
+  @if (isLoading()) {
+    <div class="rounded-md border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-800">
+      Loading performance data…
+    </div>
+  }
+
+  @if (error()) {
+    <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ error() }}
+    </div>
+  }
+
+  @if (!isLoading() && !error()) {
+    <app-user-performance-panel [records]="performanceData()" />
+  }
+</div>
+

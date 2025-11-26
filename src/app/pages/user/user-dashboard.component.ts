@@ -18,7 +18,7 @@ import { finalize } from 'rxjs/operators';
 import {
   DashboardDataModel,
   DashboardDataRecord,
-} from './dashboard-data.model';
+} from '../dashboard/dashboard-data.model';
 import {
   DashboardQueryParams,
   DashboardService,
@@ -30,8 +30,7 @@ type NumericDashboardKey =
   | 'Multi Drops'
   | 'Heavy Drops'
   | 'Walkup Drop Count'
-  | 'Double Drop Count'
-  | 'Amount';
+  | 'Double Drop Count';
 
 interface DashboardTableColumn {
   key: keyof DashboardDataRecord;
@@ -41,17 +40,6 @@ interface DashboardTableColumn {
 }
 type PerformanceRange = 'today' | 'week' | 'month' | 'year' | 'custom';
 
-interface EmployeeAggregate {
-  totalDrops: number;
-  multiDrops: number;
-  heavyDrops: number;
-  walkupDrops: number;
-  amount: number;
-  count: number;
-  shifts: Set<string>;
-  latestRecord: DashboardDataRecord;
-}
-
 interface GroupedDashboardRecord {
   DATE: string;
   'Total Drops': number;
@@ -59,12 +47,11 @@ interface GroupedDashboardRecord {
   'Heavy Drops': number;
   'Walkup Drop Count': number;
   'Double Drop Count': number;
-  Amount: number;
   DropCount: number;
 }
 
 @Component({
-  selector: 'app-dashboard',
+  selector: 'app-user-dashboard',
   standalone: true,
   imports: [
     CommonModule,
@@ -72,16 +59,19 @@ interface GroupedDashboardRecord {
     ChartWrapperComponent,
     DataTableComponent,
   ],
-  templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css'],
+  templateUrl: './user-dashboard.component.html',
+  styleUrls: ['./user-dashboard.component.css'],
 })
-export class DashboardComponent implements OnInit {
+export class UserDashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly authService = inject(AuthService);
   isLoading = signal(false);
   error = signal<string | null>(null);
   dashboardData = signal<DashboardDataModel>([]);
-  readonly underperformerThreshold = 80;
+
+  // Get current user email for filtering
+  currentUserEmail = computed(() => this.authService.getCurrentUserEmail());
 
   readonly tableColumns: DashboardTableColumn[] = [
     { key: 'Timestamp', label: 'Timestamp', type: 'text' },
@@ -102,7 +92,7 @@ export class DashboardComponent implements OnInit {
       type: 'number',
       numeric: true,
     },
-    { key: 'Amount', label: 'Amount', type: 'number', numeric: true },
+    // Note: Amount column is intentionally excluded for users
   ];
 
   tableFilters = signal<Record<string, string>>(
@@ -224,7 +214,6 @@ export class DashboardComponent implements OnInit {
       });
     }
 
-    // Group by date for daily trends
     const dailyMap = new Map<string, { date: Date; value: number }>();
     
     records.forEach((record) => {
@@ -234,7 +223,6 @@ export class DashboardComponent implements OnInit {
       const dateObj = this.parseRecordDate({ DATE: dateStr } as DashboardDataRecord);
       if (!dateObj) return;
       
-      // Use ISO date string as key for grouping
       const dateKey = dateObj.toISOString().split('T')[0];
       
       const existing = dailyMap.get(dateKey);
@@ -248,7 +236,6 @@ export class DashboardComponent implements OnInit {
       }
     });
 
-    // Sort by date and create chart data
     const sortedDaily = Array.from(dailyMap.entries())
       .map(([key, data]) => ({
         label: data.date.toLocaleDateString(undefined, {
@@ -293,47 +280,6 @@ export class DashboardComponent implements OnInit {
   };
 
   public dailyTrendsChartType: ChartType = 'line';
-
-  public dropsPerEmployeeChartData = computed(() => {
-    const records = this.filteredRecords();
-    if (!records.length) {
-      return this.createBarChartData([], [], 'Drops per Employee', {
-        background: 'rgba(147, 51, 234, 0.8)',
-        border: 'rgba(147, 51, 234, 1)',
-      });
-    }
-
-    const employeeTotals = this.groupAndSum(
-      records,
-      (record) => record.NAME?.trim() || 'Unknown',
-      'Total Drops',
-    );
-
-    return this.createBarChartData(
-      employeeTotals.labels,
-      employeeTotals.values,
-      'Drops per Employee',
-      {
-        background: 'rgba(147, 51, 234, 0.8)',
-        border: 'rgba(147, 51, 234, 1)',
-      },
-    );
-  });
-  public dropsPerEmployeeChartOptions: ChartConfiguration['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-  };
-  public dropsPerEmployeeChartType: ChartType = 'bar';
 
   public dropTypeChartData = computed(() => {
     const records = this.filteredRecords();
@@ -380,6 +326,7 @@ export class DashboardComponent implements OnInit {
       ],
     );
   });
+
   public dropTypeChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -390,26 +337,6 @@ export class DashboardComponent implements OnInit {
     },
   };
   public dropTypeChartType: ChartType = 'pie';
-
-  public averageDropsTrendChartData = computed(() => {
-    const records = this.filteredRecords();
-    if (!records.length) {
-      return this.createLineChartData([], [], 'Average Drops per Employee');
-    }
-
-    const monthlyAverages = this.groupMonthlyAverages(records);
-    return this.createLineChartData(
-      monthlyAverages.labels,
-      monthlyAverages.values,
-      'Average Drops per Employee',
-      {
-        background: 'rgba(34, 197, 94, 0.15)',
-        border: 'rgba(34, 197, 94, 1)',
-      },
-    );
-  });
-  public averageDropsTrendChartOptions: ChartConfiguration['options'];
-  public averageDropsTrendChartType: ChartType = 'line';
 
   totalDrops = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Total Drops'),
@@ -423,115 +350,172 @@ export class DashboardComponent implements OnInit {
   walkupDropCount = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Walkup Drop Count'),
   );
-  totalAmount = computed(() =>
-    this.sumNumeric(this.filteredRecords(), 'Amount'),
-  );
   doubleDropCount = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Double Drop Count'),
   );
-  activeEmployee = computed(() =>{
-    const uniqueRecords = new Set(this.filteredRecords().map((record) => record.NAME)); // Use a unique field like 'NAME'
-    return uniqueRecords.size;
-});
-dailyTotals = computed(() =>{
-    const uniqueRecords = new Set(this.filteredRecords().map((record) => record.DATE)); // Use a unique field like 'NAME'
-    return uniqueRecords.size;
-});
+  dailyTotals = computed(() => {
+    const uniqueRecords = new Set(this.filteredRecords().map((record) => record.DATE));
+    return uniqueRecords.size || 1;
+  });
   recordsCount = computed(() => this.filteredRecords().length);
 
-  recentActivities = computed(() => {
-    const records = this.filteredRecords();
-    return records.slice(0, 5).map((record, index) => ({
-      id:
-        record.Timestamp ||
-        record.FIN ||
-        record['Email Address'] ||
-        `${index}`,
-      user: record.NAME?.trim() || 'Unknown driver',
-      action: `${this.ensureNumber(record['Total Drops'])} drops • Shift ${record.Shift || 'N/A'}`,
-      time: this.formatTimestamp(record.Timestamp || record.DATE),
-    }));
+  performanceRange = signal<PerformanceRange>('month');
+  customStart = signal<string | null>(null);
+  customEnd = signal<string | null>(null);
+
+  readonly rangeOptions: { label: string; value: PerformanceRange }[] = [
+    { label: 'Today', value: 'today' },
+    { label: 'This Week', value: 'week' },
+    { label: 'This Month', value: 'month' },
+    { label: 'This Year', value: 'year' },
+  ];
+
+  filteredRecords = computed(() => {
+    const records = this.dashboardData();
+    const range = this.performanceRange();
+    const customStart = this.customStart();
+    const customEnd = this.customEnd();
+    const userEmail = this.currentUserEmail();
+
+    // Filter by user email
+    let filteredByUser = records;
+    if (userEmail) {
+      const lowerUserEmail = userEmail.toLowerCase().trim();
+      filteredByUser = records.filter((record) => {
+        const recordEmail = (record['Email Address'] || '').toLowerCase().trim();
+        const matches = recordEmail === lowerUserEmail;
+        if (!matches && records.length > 0 && records.indexOf(record) === 0) {
+          console.log('User Dashboard - Email mismatch:', {
+            userEmail: lowerUserEmail,
+            recordEmail: recordEmail,
+            record: record
+          });
+        }
+        return matches;
+      });
+      console.log('User Dashboard - Filtered records:', filteredByUser.length, 'out of', records.length);
+    } else {
+      console.warn('User Dashboard - No user email found, showing all records');
+    }
+
+    const { startDate, endDate } = this.getRangeBounds(range, customStart, customEnd);
+
+    if (!startDate && !endDate) {
+      return filteredByUser;
+    }
+
+    return filteredByUser.filter((record) => {
+      const recordDate = this.parseRecordDate(record);
+
+      if (!recordDate) {
+        return false;
+      }
+
+      if (startDate && recordDate < startDate) {
+        return false;
+      }
+      if (endDate && recordDate > endDate) {
+        return false;
+      }
+
+      return true;
+    });
   });
 
-  constructor() {
-    this.averageDropsTrendChartOptions = {
-      elements: {
-        line: {
-          tension: 0.5,
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-      },
-      plugins: {
-        legend: {
-          display: false,
-        },
-      },
-      responsive: true,
-      maintainAspectRatio: false,
-    };
+  groupedData = computed(() => {
+    const records = this.filteredRecords();
+    const groupedMap = new Map<string, GroupedDashboardRecord>();
 
+    records.forEach((record) => {
+      const date = record.DATE || 'Unknown';
+      const key = date;
+
+      const existing = groupedMap.get(key);
+      if (existing) {
+        existing['Total Drops'] += this.ensureNumber(record['Total Drops']);
+        existing['Multi Drops'] += this.ensureNumber(record['Multi Drops']);
+        existing['Heavy Drops'] += this.ensureNumber(record['Heavy Drops']);
+        existing['Walkup Drop Count'] += this.ensureNumber(record['Walkup Drop Count']);
+        existing['Double Drop Count'] += this.ensureNumber(record['Double Drop Count']);
+        existing.DropCount += this.ensureNumber(record.DropCount || 0);
+      } else {
+        groupedMap.set(key, {
+          DATE: date,
+          'Total Drops': this.ensureNumber(record['Total Drops']),
+          'Multi Drops': this.ensureNumber(record['Multi Drops']),
+          'Heavy Drops': this.ensureNumber(record['Heavy Drops']),
+          'Walkup Drop Count': this.ensureNumber(record['Walkup Drop Count']),
+          'Double Drop Count': this.ensureNumber(record['Double Drop Count']),
+          DropCount: this.ensureNumber(record.DropCount || 0),
+        });
+      }
+    });
+
+    const groupedArray = Array.from(groupedMap.values());
+    
+    return groupedArray.sort((a, b) => {
+      const dateA = this.parseRecordDate({ DATE: a.DATE } as DashboardDataRecord);
+      const dateB = this.parseRecordDate({ DATE: b.DATE } as DashboardDataRecord);
+      
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      
+      return dateB.getTime() - dateA.getTime();
+    });
+  });
+
+  groupedDataSignal = signal<GroupedDashboardRecord[]>([]);
+  groupedTablePageSize = signal(10);
+
+  groupedTableColumns: DataTableColumn<GroupedDashboardRecord>[] = [
+    { key: 'DATE', label: 'Date', sortable: true, filterable: true },
+    { 
+      key: 'Total Drops', 
+      label: 'Total Drops', 
+      sortable: true,
+      render: (row) => row['Total Drops'].toLocaleString()
+    },
+    { 
+      key: 'Multi Drops', 
+      label: 'Multi Drops', 
+      sortable: true,
+      render: (row) => row['Multi Drops'].toLocaleString()
+    },
+    { 
+      key: 'Heavy Drops', 
+      label: 'Heavy Drops', 
+      sortable: true,
+      render: (row) => row['Heavy Drops'].toLocaleString()
+    },
+    { 
+      key: 'Walkup Drop Count', 
+      label: 'Walkup Drops', 
+      sortable: true,
+      render: (row) => row['Walkup Drop Count'].toLocaleString()
+    },
+    { 
+      key: 'Double Drop Count', 
+      label: 'Double Drops', 
+      sortable: true,
+      render: (row) => row['Double Drop Count'].toLocaleString()
+    },
+    // Note: Amount column is intentionally excluded for users
+    { 
+      key: 'DropCount', 
+      label: 'Drop Count', 
+      sortable: true,
+      render: (row) => row.DropCount.toLocaleString()
+    },
+  ];
+
+  constructor() {
     // Update groupedDataSignal when groupedData changes
     effect(() => {
       const data = this.groupedData();
       this.groupedDataSignal.set(data);
     });
   }
-
-  topPerformer = computed(() => {
-    const records = this.filteredRecords();
-    if (!records.length) {
-      return null;
-    }
-
-    const aggregates = Array.from(
-      this.aggregateByEmployee(records).entries(),
-    );
-    if (!aggregates.length) {
-      return null;
-    }
-
-    const [name, stats] = aggregates.reduce(
-      (best, current) =>
-        current[1].totalDrops > best[1].totalDrops ? current : best,
-      aggregates[0],
-    );
-
-    const average = stats.count > 0 ? stats.totalDrops / stats.count : 0;
-
-    return {
-      name,
-      totalDrops: stats.totalDrops,
-      averageDrops: average,
-      shifts: Array.from(stats.shifts),
-      latest: stats.latestRecord,
-    };
-  });
-
-  underperformingEmployees = computed(() => {
-    const records = this.filteredRecords();
-    if (!records.length) {
-      return [];
-    }
-
-    const aggregates = this.aggregateByEmployee(records);
-    return Array.from(aggregates.entries())
-      .map(([name, stats]) => {
-        const average =
-          stats.count > 0 ? stats.totalDrops / stats.count : 0;
-        return {
-          name,
-          averageDrops: average,
-          totalDrops: stats.totalDrops,
-          shifts: Array.from(stats.shifts),
-        };
-      })
-      .filter((item) => item.averageDrops < this.underperformerThreshold)
-      .sort((a, b) => a.averageDrops - b.averageDrops);
-  });
 
   ngOnInit() {
     this.loadDashboardData();
@@ -549,6 +533,13 @@ dailyTotals = computed(() =>{
       )
       .subscribe({
         next: (data) => {
+          console.log('User Dashboard - Data loaded:', data.length, 'records');
+          console.log('User Dashboard - Current user email:', this.currentUserEmail());
+          if (data.length > 0) {
+            console.log('User Dashboard - Sample record email field:', data[0]['Email Address']);
+            console.log('User Dashboard - All unique emails in data:', 
+              [...new Set(data.map(r => r['Email Address']).filter(Boolean))]);
+          }
           this.dashboardData.set(data);
         },
         error: (err) => {
@@ -557,8 +548,6 @@ dailyTotals = computed(() =>{
         },
       });
   }
-
-
 
   private createLineChartData(
     labels: string[],
@@ -584,29 +573,6 @@ dailyTotals = computed(() =>{
         },
       ],
       labels,
-    };
-  }
-
-  private createBarChartData(
-    labels: string[],
-    data: number[],
-    datasetLabel = 'Walkup Drops',
-    color: { background: string; border: string } = {
-      background: 'rgba(59, 130, 246, 0.8)',
-      border: 'rgba(59, 130, 246, 1)',
-    },
-  ): ChartConfiguration['data'] {
-    return {
-      labels,
-      datasets: [
-        {
-          data,
-          label: datasetLabel,
-          backgroundColor: color.background,
-          borderColor: color.border,
-          borderWidth: 1,
-        },
-      ],
     };
   }
 
@@ -729,6 +695,92 @@ dailyTotals = computed(() =>{
     return 'Unable to load dashboard data. Please try again later.';
   }
 
+  private getRangeBounds(
+    range: PerformanceRange,
+    customStart: string | null,
+    customEnd: string | null,
+  ): { startDate: Date | null; endDate: Date | null } {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (range) {
+      case 'today':
+        return {
+          startDate: todayStart,
+          endDate: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1),
+        };
+      case 'week': {
+        const start = new Date(todayStart);
+        start.setDate(start.getDate() - 6);
+        return { startDate: start, endDate: now };
+      }
+      case 'month':
+        return {
+          startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+          endDate: now,
+        };
+      case 'year':
+        return {
+          startDate: new Date(now.getFullYear(), 0, 1),
+          endDate: now,
+        };
+      case 'custom': {
+       const startDate = customStart ? new Date(new Date(customStart).setHours(0, 0, 0, 0)) : null;
+        const endDate = customEnd ? new Date(new Date(customEnd).setHours(0, 0, 0, 0)) : null;
+        return { startDate, endDate };
+    }
+      default:
+        return { startDate: null, endDate: null };
+    }
+  }
+
+  private parseRecordDate(record: DashboardDataRecord): Date | null {
+    const source = record.DATE || record.Timestamp;
+    if (!source) {
+      return null;
+    }
+    const date = new Date(source);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return date;
+  }
+
+  applyCustomRange(): void {
+    if (this.isCustomRangeValid()) {
+      this.performanceRange.set('custom');
+    }
+  }
+
+  isCustomRangeValid = computed(() => {
+    const start = this.customStart();
+    const end = this.customEnd();
+
+    if (!start || !end) {
+      return false;
+    }
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    return startDate <= endDate;
+  });
+
+  setRange(range: PerformanceRange): void {
+    this.performanceRange.set(range);
+    if (range !== 'custom') {
+      this.customStart.set(null);
+      this.customEnd.set(null);
+    }
+  }
+
+  updateCustomStart(value: string): void {
+    this.customStart.set(value || null);
+  }
+
+  updateCustomEnd(value: string): void {
+    this.customEnd.set(value || null);
+  }
+
   updateFilter(columnKey: DashboardTableColumn['key'], value: string): void {
     this.tableFilters.update((filters) => ({
       ...filters,
@@ -776,14 +828,6 @@ dailyTotals = computed(() =>{
       return '—';
     }
 
-    if (column.key === 'Amount') {
-      return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(this.ensureNumber(value));
-    }
-
     if (column.key === 'Timestamp') {
       return this.formatTimestamp(String(value));
     }
@@ -793,308 +837,5 @@ dailyTotals = computed(() =>{
 
   trackByRecord = (index: number, record: DashboardDataRecord) =>
     record.Timestamp || record.FIN || index;
-
-
-  private groupMonthlyAverages(
-    records: DashboardDataModel,
-  ): { labels: string[]; values: number[] } {
-    const accumulator = new Map<
-      string,
-      { totalDrops: number; employees: Set<string> }
-    >();
-
-    records.forEach((record) => {
-      const label = record.Month || this.tryGetMonthFromDate(record.DATE);
-      const key = label || 'Unknown';
-      const entry =
-        accumulator.get(key) ?? {
-          totalDrops: 0,
-          employees: new Set<string>(),
-        };
-
-      entry.totalDrops += this.ensureNumber(record['Total Drops']);
-      entry.employees.add(record.NAME?.trim() || 'Unknown');
-      accumulator.set(key, entry);
-    });
-
-    const labels = Array.from(accumulator.keys());
-    const values = labels.map((label) => {
-      const entry = accumulator.get(label);
-      if (!entry) {
-        return 0;
-      }
-
-      const employeeCount = entry.employees.size || 1;
-      return entry.totalDrops / employeeCount;
-    });
-
-    return { labels, values };
-  }
-
-  private aggregateByEmployee(
-    records: DashboardDataModel,
-  ): Map<string, EmployeeAggregate> {
-    const map = new Map<string, EmployeeAggregate>();
-
-    records.forEach((record) => {
-      const name = record.NAME?.trim() || 'Unknown';
-      const entry =
-        map.get(name) ?? {
-          totalDrops: 0,
-          multiDrops: 0,
-          heavyDrops: 0,
-          walkupDrops: 0,
-          amount: 0,
-          count: 0,
-          shifts: new Set<string>(),
-          latestRecord: record,
-        };
-
-      entry.totalDrops += this.ensureNumber(record['Total Drops']);
-      entry.multiDrops += this.ensureNumber(record['Multi Drops']);
-      entry.heavyDrops += this.ensureNumber(record['Heavy Drops']);
-      entry.walkupDrops += this.ensureNumber(record['Walkup Drop Count']);
-      entry.amount += this.ensureNumber(record.Amount);
-      entry.count += 1;
-      if (record.Shift) {
-        entry.shifts.add(record.Shift);
-      }
-      entry.latestRecord = record;
-
-      map.set(name, entry);
-    });
-
-    return map;
-  }
-
- //#region Performance Filter
-performanceRange = signal<PerformanceRange>('month');
-customStart = signal<string | null>(null);
-customEnd = signal<string | null>(null);
-
-readonly rangeOptions: { label: string; value: PerformanceRange }[] = [
-  { label: 'Today', value: 'today' },
-  { label: 'This Week', value: 'week' },
-  { label: 'This Month', value: 'month' },
-  { label: 'This Year', value: 'year' },
-];
-
-filteredRecords = computed(() => {
-  const records = this.dashboardData();
-  const range = this.performanceRange();
-  const customStart = this.customStart();
-  const customEnd = this.customEnd();
-
-  const { startDate, endDate } = this.getRangeBounds(range, customStart, customEnd);
-
-  if (!startDate && !endDate) {
-    return records;
-  }
-
-  return records.filter((record) => {
-    const recordDate = this.parseRecordDate(record);
-
-    if (!recordDate) {
-      return false;
-    }
-
-    if (startDate && recordDate < startDate) {
-      return false;
-    }
-    if (endDate && recordDate > endDate) {
-      return false;
-    }
-
-    return true;
-  });
-});
-
-private getRangeBounds(
-  range: PerformanceRange,
-  customStart: string | null,
-  customEnd: string | null,
-): { startDate: Date | null; endDate: Date | null } {
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  switch (range) {
-    case 'today':
-      return {
-        startDate: todayStart,
-        endDate: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1),
-      };
-    case 'week': {
-      const start = new Date(todayStart);
-      start.setDate(start.getDate() - 6);
-      return { startDate: start, endDate: now };
-    }
-    case 'month':
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
-        endDate: now,
-      };
-    case 'year':
-      return {
-        startDate: new Date(now.getFullYear(), 0, 1),
-        endDate: now,
-      };
-    case 'custom': {
-       const startDate = customStart ? new Date(new Date(customStart).setHours(0, 0, 0, 0)) : null;
-        const endDate = customEnd ? new Date(new Date(customEnd).setHours(0, 0, 0, 0)) : null;
-        return { startDate, endDate };
-    }
-    default:
-      return { startDate: null, endDate: null };
-  }
-}
-
-private parseRecordDate(record: DashboardDataRecord): Date | null {
-  const source = record.DATE || record.Timestamp;
-  if (!source) {
-    return null;
-  }
-  const date = new Date(source);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return date;
-}
-
-applyCustomRange(): void {
-  if (this.isCustomRangeValid()) {
-    this.performanceRange.set('custom');
-  }
-}
-
-isCustomRangeValid = computed(() => {
-  const start = this.customStart();
-  const end = this.customEnd();
-
-  if (!start || !end) {
-    return false;
-  }
-
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  return startDate <= endDate;
-});
-
-setRange(range: PerformanceRange): void {
-  this.performanceRange.set(range);
-  if (range !== 'custom') {
-    this.customStart.set(null);
-    this.customEnd.set(null);
-  }
-
-  
-}
-
- updateCustomStart(value: string): void {
-    this.customStart.set(value || null);
-  }
-  updateCustomEnd(value: string): void {
-    this.customEnd.set(value || null);
-  }
-//#endregion
-
-  // Grouped data by DATE, NAME, FIN with summed numeric columns
-  groupedData = computed(() => {
-    const records = this.filteredRecords();
-    const groupedMap = new Map<string, GroupedDashboardRecord>();
-
-    records.forEach((record) => {
-      const date = record.DATE || 'Unknown';
-      const key = date;
-
-      const existing = groupedMap.get(key);
-      if (existing) {
-        existing['Total Drops'] += this.ensureNumber(record['Total Drops']);
-        existing['Multi Drops'] += this.ensureNumber(record['Multi Drops']);
-        existing['Heavy Drops'] += this.ensureNumber(record['Heavy Drops']);
-        existing['Walkup Drop Count'] += this.ensureNumber(record['Walkup Drop Count']);
-        existing['Double Drop Count'] += this.ensureNumber(record['Double Drop Count']);
-        existing.Amount += this.ensureNumber(record.Amount);
-        existing.DropCount += this.ensureNumber(record.DropCount);
-      } else {
-        groupedMap.set(key, {
-          DATE: date,
-          'Total Drops': this.ensureNumber(record['Total Drops']),
-          'Multi Drops': this.ensureNumber(record['Multi Drops']),
-          'Heavy Drops': this.ensureNumber(record['Heavy Drops']),
-          'Walkup Drop Count': this.ensureNumber(record['Walkup Drop Count']),
-          'Double Drop Count': this.ensureNumber(record['Double Drop Count']),
-          Amount: this.ensureNumber(record.Amount),
-          DropCount: this.ensureNumber(record.DropCount),
-        });
-      }
-    });
-
-    const groupedArray = Array.from(groupedMap.values());
-    
-    // Sort by date descending (newest first)
-    return groupedArray.sort((a, b) => {
-      const dateA = this.parseRecordDate({ DATE: a.DATE } as DashboardDataRecord);
-      const dateB = this.parseRecordDate({ DATE: b.DATE } as DashboardDataRecord);
-      
-      if (!dateA && !dateB) return 0;
-      if (!dateA) return 1;
-      if (!dateB) return -1;
-      
-      return dateB.getTime() - dateA.getTime(); // Descending order
-    });
-  });
-
-  groupedDataSignal = signal<GroupedDashboardRecord[]>([]);
-  groupedTablePageSize = signal(10);
-
-  groupedTableColumns: DataTableColumn<GroupedDashboardRecord>[] = [
-    { key: 'DATE', label: 'Date', sortable: true, filterable: true },
-    { 
-      key: 'Total Drops', 
-      label: 'Total Drops', 
-      sortable: true,
-      render: (row) => row['Total Drops'].toLocaleString()
-    },
-    { 
-      key: 'Multi Drops', 
-      label: 'Multi Drops', 
-      sortable: true,
-      render: (row) => row['Multi Drops'].toLocaleString()
-    },
-    { 
-      key: 'Heavy Drops', 
-      label: 'Heavy Drops', 
-      sortable: true,
-      render: (row) => row['Heavy Drops'].toLocaleString()
-    },
-    { 
-      key: 'Walkup Drop Count', 
-      label: 'Walkup Drops', 
-      sortable: true,
-      render: (row) => row['Walkup Drop Count'].toLocaleString()
-    },
-    { 
-      key: 'Double Drop Count', 
-      label: 'Double Drops', 
-      sortable: true,
-      render: (row) => row['Double Drop Count'].toLocaleString()
-    },
-    { 
-      key: 'Amount', 
-      label: 'Amount', 
-      sortable: true,
-      render: (row) => new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(row.Amount)
-    },
-    { 
-      key: 'DropCount', 
-      label: 'Drop Count', 
-      sortable: true,
-      render: (row) => row.DropCount.toLocaleString()
-    },
-  ];
 }
 

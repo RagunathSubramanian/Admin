@@ -7,20 +7,40 @@
     type="button"
     class="md:hidden p-2 rounded-md theme-text-secondary hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
     aria-label="Toggle sidebar"
+    (click)="onMobileMenuClick()"
+    [attr.aria-expanded]="mobileMenuOpen"
   >
-    <svg
-      class="h-6 w-6"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M4 6h16M4 12h16M4 18h16"
-      />
-    </svg>
+    @if (mobileMenuOpen) {
+      <!-- Close icon (X) -->
+      <svg
+        class="h-6 w-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"
+        />
+      </svg>
+    } @else {
+      <!-- Hamburger icon -->
+      <svg
+        class="h-6 w-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M4 6h16M4 12h16M4 18h16"
+        />
+      </svg>
+    }
   </button>
 
   <!-- Center: Search (optional) -->
@@ -108,12 +128,12 @@
         type="button"
         class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
         (click)="toggleUserMenu()"
-        [attr.aria-label]="'User menu for ' + currentUser().name"
+        [attr.aria-label]="'User menu for ' + (currentUser().email || currentUser().name)"
         [attr.aria-expanded]="showUserMenu()"
       >
-        <app-avatar [name]="currentUser().name" [size]="'sm'" />
+        <app-avatar [name]="currentUser().email || currentUser().name" [size]="'sm'" />
         <span class="hidden md:block text-sm font-medium theme-text-secondary">
-          {{ currentUser().name }}
+          {{ currentUser().email || currentUser().name }}
         </span>
         <svg
           class="hidden md:block h-4 w-4 text-gray-500"
@@ -138,8 +158,10 @@
           aria-label="User menu"
         >
           <div class="px-4 py-2 border-b theme-border">
-            <p class="text-sm font-medium theme-text-primary">{{ currentUser().name }}</p>
-            <p class="text-xs theme-text-secondary">{{ currentUser().email }}</p>
+            <p class="text-sm font-medium theme-text-primary">{{ currentUser().email || currentUser().name }}</p>
+            @if (currentUser().email && currentUser().name !== currentUser().email) {
+              <p class="text-xs theme-text-secondary">{{ currentUser().name }}</p>
+            }
           </div>
           <a
             routerLink="/settings"
