@@ -1,1 +1,0 @@
-import{d as t}from"./chunk-3A3XYTID.js";var n,e=t(()=>{n=[{path:"",loadComponent:()=>import("./chunk-CRHXILLC.js").then(o=>o.UserListComponent)},{path:"new",loadComponent:()=>import("./chunk-NVB5OOGA.js").then(o=>o.UserCreateComponent)},{path:":id",loadComponent:()=>import("./chunk-GQO7W6GJ.js").then(o=>o.UserDetailComponent)}]});e();export{n as userRoutes};
