@@ -8,9 +8,9 @@ import {
   effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent } from '../../shared/components/card.component';
-import { ChartWrapperComponent } from '../../shared/components/chart-wrapper.component';
-import { DataTableComponent, DataTableColumn } from '../../shared/components/data-table.component';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ChartWrapperComponent } from '../../../shared/components/chart-wrapper.component';
+import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table.component';
 import { ChartConfiguration, ChartType } from 'chart.js';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs/operators';
@@ -22,8 +22,8 @@ import {
 import {
   DashboardQueryParams,
   DashboardService,
-} from '../../core/services/dashboard.service';
-import { AuthService } from '../../core/services/auth.service';
+} from '../../../core/services/dashboard.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 type NumericDashboardKey =
   | 'Total Drops'
@@ -548,10 +548,10 @@ dailyTotals = computed(() =>{
         finalize(() => this.isLoading.set(false)),
       )
       .subscribe({
-        next: (data) => {
+        next: (data: DashboardDataModel) => {
           this.dashboardData.set(data);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.error.set(this.extractErrorMessage(err));
           this.dashboardData.set([]);
         },
@@ -1053,37 +1053,37 @@ setRange(range: PerformanceRange): void {
       key: 'Total Drops', 
       label: 'Total Drops', 
       sortable: true,
-      render: (row) => row['Total Drops'].toLocaleString()
+      render: (row: GroupedDashboardRecord) => row['Total Drops'].toLocaleString()
     },
     { 
       key: 'Multi Drops', 
       label: 'Multi Drops', 
       sortable: true,
-      render: (row) => row['Multi Drops'].toLocaleString()
+      render: (row: GroupedDashboardRecord) => row['Multi Drops'].toLocaleString()
     },
     { 
       key: 'Heavy Drops', 
       label: 'Heavy Drops', 
       sortable: true,
-      render: (row) => row['Heavy Drops'].toLocaleString()
+      render: (row: GroupedDashboardRecord) => row['Heavy Drops'].toLocaleString()
     },
     { 
       key: 'Walkup Drop Count', 
       label: 'Walkup Drops', 
       sortable: true,
-      render: (row) => row['Walkup Drop Count'].toLocaleString()
+      render: (row: GroupedDashboardRecord) => row['Walkup Drop Count'].toLocaleString()
     },
     { 
       key: 'Double Drop Count', 
       label: 'Double Drops', 
       sortable: true,
-      render: (row) => row['Double Drop Count'].toLocaleString()
+      render: (row: GroupedDashboardRecord) => row['Double Drop Count'].toLocaleString()
     },
     { 
       key: 'Amount', 
       label: 'Amount', 
       sortable: true,
-      render: (row) => new Intl.NumberFormat(undefined, {
+      render: (row: GroupedDashboardRecord) => new Intl.NumberFormat(undefined, {
         style: 'currency',
         currency: 'USD',
         maximumFractionDigits: 0,
@@ -1093,7 +1093,7 @@ setRange(range: PerformanceRange): void {
       key: 'DropCount', 
       label: 'Drop Count', 
       sortable: true,
-      render: (row) => row.DropCount.toLocaleString()
+      render: (row: GroupedDashboardRecord) => row.DropCount.toLocaleString()
     },
   ];
 }

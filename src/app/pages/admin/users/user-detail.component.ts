@@ -1,10 +1,10 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { CardComponent } from '../../shared/components/card.component';
-import { ButtonComponent } from '../../shared/components/button.component';
-import { BadgeComponent } from '../../shared/components/badge.component';
-import { AvatarComponent } from '../../shared/components/avatar.component';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ButtonComponent } from '../../../shared/components/button.component';
+import { BadgeComponent } from '../../../shared/components/badge.component';
+import { AvatarComponent } from '../../../shared/components/avatar.component';
 
 @Component({
   selector: 'app-user-detail',

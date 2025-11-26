@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { map, Observable, pipe } from 'rxjs';
 
-import { DashboardDataModel } from '../../pages/dashboard/dashboard-data.model';
+import { DashboardDataModel } from '../../pages/admin/dashboard/dashboard-data.model';
 import { ApiService } from './api.service';
 import { GoogleSheetService } from './GooleSheet.service'; 
 

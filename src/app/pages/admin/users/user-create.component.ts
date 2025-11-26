@@ -2,9 +2,9 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { CardComponent } from '../../shared/components/card.component';
-import { ButtonComponent } from '../../shared/components/button.component';
-import { FormFieldComponent } from '../../shared/components/form-field.component';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ButtonComponent } from '../../../shared/components/button.component';
+import { FormFieldComponent } from '../../../shared/components/form-field.component';
 
 @Component({
   selector: 'app-user-create',

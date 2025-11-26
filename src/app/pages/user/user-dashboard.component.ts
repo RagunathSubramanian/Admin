@@ -18,7 +18,7 @@ import { finalize } from 'rxjs/operators';
 import {
   DashboardDataModel,
   DashboardDataRecord,
-} from '../dashboard/dashboard-data.model';
+} from '../admin/dashboard/dashboard-data.model';
 import {
   DashboardQueryParams,
   DashboardService,

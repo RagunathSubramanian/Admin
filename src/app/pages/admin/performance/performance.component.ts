@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs/operators';
 
-import { DashboardService } from '../../core/services/dashboard.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
 import { DashboardDataModel } from '../dashboard/dashboard-data.model';
 import { PerformancePanelComponent } from './performance-panel.component';
 
@@ -42,11 +42,11 @@ export class PerformanceComponent implements OnInit {
         finalize(() => this.isLoading.set(false)),
       )
       .subscribe({
-        next: (data) => {
+        next: (data: DashboardDataModel) => {
           console.log('Performance Data Loaded:', data);
           this.performanceData.set(data); // Data is already mapped to DashboardDataModel
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.error.set(this.extractErrorMessage(err));
           this.performanceData.set([]);
         },

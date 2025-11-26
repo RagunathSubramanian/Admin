@@ -13,7 +13,7 @@ import { ChartConfiguration, ChartType } from 'chart.js';
 import {
   DashboardDataModel,
   DashboardDataRecord,
-} from '../dashboard/dashboard-data.model';
+} from '../admin/dashboard/dashboard-data.model';
 import { CardComponent } from '../../shared/components/card.component';
 import { ChartWrapperComponent } from '../../shared/components/chart-wrapper.component';
 import { DataTableComponent, DataTableColumn } from '../../shared/components/data-table.component';

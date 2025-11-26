@@ -1,11 +1,11 @@
 import { Component, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormArray, Validators } from '@angular/forms';
-import { CardComponent } from '../../shared/components/card.component';
-import { ButtonComponent } from '../../shared/components/button.component';
-import { FormFieldComponent } from '../../shared/components/form-field.component';
-import { UserConfigService } from '../../core/services/user-config.service';
-import { AuthService } from '../../core/services/auth.service';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ButtonComponent } from '../../../shared/components/button.component';
+import { FormFieldComponent } from '../../../shared/components/form-field.component';
+import { UserConfigService } from '../../../core/services/user-config.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-settings',

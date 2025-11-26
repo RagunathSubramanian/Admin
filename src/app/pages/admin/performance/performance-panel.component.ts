@@ -13,9 +13,9 @@ import {
   DashboardDataModel,
   DashboardDataRecord,
 } from '../dashboard/dashboard-data.model';
-import { CardComponent } from '../../shared/components/card.component';
-import { ChartWrapperComponent } from '../../shared/components/chart-wrapper.component';
-import { DataTableComponent, DataTableColumn } from '../../shared/components/data-table.component';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ChartWrapperComponent } from '../../../shared/components/chart-wrapper.component';
+import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table.component';
 
 type PerformanceRange = 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -862,37 +862,37 @@ export class PerformancePanelComponent {
         key: 'Total Drops', 
         label: 'Total Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Total Drops']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Total Drops']).toLocaleString()
       },
       { 
         key: 'Multi Drops', 
         label: 'Multi Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Multi Drops']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Multi Drops']).toLocaleString()
       },
       { 
         key: 'Heavy Drops', 
         label: 'Heavy Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Heavy Drops']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Heavy Drops']).toLocaleString()
       },
       { 
         key: 'Walkup Drop Count', 
         label: 'Walkup Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Walkup Drop Count']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Walkup Drop Count']).toLocaleString()
       },
       { 
         key: 'Double Drop Count', 
         label: 'Double Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Double Drop Count']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Double Drop Count']).toLocaleString()
       },
       { 
         key: 'Amount', 
         label: 'Amount', 
         sortable: true,
-        render: (row) => new Intl.NumberFormat(undefined, {
+        render: (row: DashboardDataRecord) => new Intl.NumberFormat(undefined, {
           style: 'currency',
           currency: 'SGD',
           maximumFractionDigits: 0,
@@ -907,37 +907,37 @@ export class PerformancePanelComponent {
         key: 'Total Drops', 
         label: 'Total Drops', 
         sortable: true,
-        render: (row) => row['Total Drops'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Total Drops'].toLocaleString()
       },
       { 
         key: 'Multi Drops', 
         label: 'Multi Drops', 
         sortable: true,
-        render: (row) => row['Multi Drops'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Multi Drops'].toLocaleString()
       },
       { 
         key: 'Heavy Drops', 
         label: 'Heavy Drops', 
         sortable: true,
-        render: (row) => row['Heavy Drops'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Heavy Drops'].toLocaleString()
       },
       { 
         key: 'Walkup Drop Count', 
         label: 'Walkup Drops', 
         sortable: true,
-        render: (row) => row['Walkup Drop Count'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Walkup Drop Count'].toLocaleString()
       },
       { 
         key: 'Double Drop Count', 
         label: 'Double Drops', 
         sortable: true,
-        render: (row) => row['Double Drop Count'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Double Drop Count'].toLocaleString()
       },
       { 
         key: 'Amount', 
         label: 'Amount', 
         sortable: true,
-        render: (row) => new Intl.NumberFormat(undefined, {
+        render: (row: GroupedPerformanceRecord) => new Intl.NumberFormat(undefined, {
           style: 'currency',
           currency: 'SGD',
           maximumFractionDigits: 0,
@@ -947,7 +947,7 @@ export class PerformancePanelComponent {
         key: 'DropCount', 
         label: 'Drop Count', 
         sortable: true,
-        render: (row) => row.DropCount.toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row.DropCount.toLocaleString()
       },
     ];
 

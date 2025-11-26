@@ -10,7 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs/operators';
 
 import { DashboardService } from '../../core/services/dashboard.service';
-import { DashboardDataModel } from '../dashboard/dashboard-data.model';
+import { DashboardDataModel } from '../admin/dashboard/dashboard-data.model';
 import { UserPerformancePanelComponent } from './user-performance-panel.component';
 
 @Component({
