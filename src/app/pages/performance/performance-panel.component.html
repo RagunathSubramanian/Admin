@@ -212,91 +212,40 @@
       [ariaLabel]="'Enhanced users table'"
     />
   </section> -->
-  <app-card
-    title="Drop Records"
-    subtitle="Filter each column or sort to analyse individual drop performance"
-    padding="sm"
-  >
-    <div class="flex flex-col gap-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-gray-600">
-          Showing {{ filteredTableData().length }} of {{ recordsCount() }} records
-        </p>
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          (click)="clearFilters()"
-        >
-          Clear filters
-        </button>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              @for (column of tableColumns; track column.key) {
-                <th
-                  scope="col"
-                  class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
-                >
-                  <button
-                    type="button"
-                    class="flex items-center gap-2 text-left hover:text-primary-600 focus:outline-none"
-                    (click)="toggleSort(column.key)"
-                  >
-                    <span>{{ column.label }}</span>
-                    <span class="text-gray-400">
-                      @if (getSortDirection(column.key) === 'asc') {
-                        ↑
-                      } @else if (getSortDirection(column.key) === 'desc') {
-                        ↓
-                      } @else {
-                        ⇅
-                      }
-                    </span>
-                  </button>
-                </th>
-              }
-            </tr>
-            <tr class="bg-white">
-              @for (column of tableColumns; track column.key) {
-                <th class="px-4 py-2">
-                  <input
-                    [attr.type]="column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : 'text'"
-                    [value]="getFilterValue(column.key)"
-                    (input)="updateFilter(column.key, $any($event.target)?.value ?? '')"
-                    [placeholder]="'Filter ' + column.label"
-                    class="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-                  />
-                </th>
-              }
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            @for (record of filteredTableData(); track trackByRecord($index, record)) {
-              <tr class="hover:bg-gray-50">
-                @for (column of tableColumns; track column.key) {
-                  <td class="px-4 py-3 text-sm text-gray-900">
-                    {{ formatCellValue(record, column) }}
-                  </td>
-                }
-              </tr>
-            } @empty {
-              <tr>
-                <td
-                  [attr.colspan]="tableColumns.length"
-                  class="px-4 py-6 text-center text-sm text-gray-500"
-                >
-                  No records match the current filters.
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </app-card>
+  <section>
+    <app-card
+      title="Grouped Summary"
+      subtitle="Grouped by Date and Name (excluding Shift)"
+      padding="sm"
+    >
+      <app-data-table
+        [columns]="groupedTableColumns"
+        [data]="groupedTableDataSignal"
+        [pagination]="true"
+        [pageSize]="groupedTablePageSize"
+        [showToolbar]="false"
+        [showFilters]="true"
+        [searchable]="false"
+      />
+    </app-card>
+  </section>
+  <section>
+    <app-card
+      title="Drop Records"
+      subtitle="All records ordered by date (newest first)"
+      padding="sm"
+    >
+      <app-data-table
+        [columns]="dropRecordsTableColumns"
+        [data]="dropRecordsTableDataSignal"
+        [pagination]="true"
+        [pageSize]="dropRecordsTablePageSize"
+        [showToolbar]="false"
+        [showFilters]="true"
+        [searchable]="false"
+      />
+    </app-card>
+  </section>
       <ng-template #noSelection>
         <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
           Select an employee to view detailed performance charts.

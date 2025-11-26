@@ -79,7 +79,7 @@ export class ChartWrapperComponent
   }
 
   ngAfterViewInit() {
-    if (this.chartCanvas && this.chartData) {
+    if (this.chartCanvas) {
       this.createChart();
     }
   }
@@ -95,6 +95,9 @@ export class ChartWrapperComponent
       } else if (changes['chartOptions']) {
         this.updateChartOptions();
       }
+    } else if (changes['chartData'] && this.chartCanvas && this.chartData) {
+      // Chart doesn't exist yet but we have data now - create it
+      this.createChart();
     }
   }
 
@@ -103,9 +106,12 @@ export class ChartWrapperComponent
   }
 
   private createChart() {
-    if (!this.chartCanvas || !this.chartData) {
+    if (!this.chartCanvas) {
       return;
     }
+
+    // Ensure we have valid chart data structure
+    const data = this.chartData || { labels: [], datasets: [] };
 
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
     if (!ctx) {
@@ -114,7 +120,7 @@ export class ChartWrapperComponent
 
     const config: ChartConfiguration = {
       type: this.chartType,
-      data: this.chartData,
+      data: data,
       options: this.mergedOptions(),
     };
 

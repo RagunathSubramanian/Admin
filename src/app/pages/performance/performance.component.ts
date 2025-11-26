@@ -25,7 +25,7 @@ export class PerformanceComponent implements OnInit {
 
   isLoading = signal(false);
   error = signal<string | null>(null);
-  performanceData = signal<DashboardDataModel>([]);
+   performanceData = signal<DashboardDataModel>([]);
 
   ngOnInit(): void {
     this.loadPerformanceData();
@@ -43,7 +43,8 @@ export class PerformanceComponent implements OnInit {
       )
       .subscribe({
         next: (data) => {
-          this.performanceData.set(this.convertSheetToJson(data));
+          console.log('Performance Data Loaded:', data);
+          this.performanceData.set(data); // Data is already mapped to DashboardDataModel
         },
         error: (err) => {
           this.error.set(this.extractErrorMessage(err));
@@ -51,25 +52,6 @@ export class PerformanceComponent implements OnInit {
         },
       });
   }
-convertSheetToJson(sheetData: any): any[] {
-  const values: any[][] = sheetData && Array.isArray(sheetData.values) ? sheetData.values : [];
-  if (values.length === 0) return [];
-
-  const headers = values[0].map(h => h ? String(h).trim() : '');
-  const dataRows = values.slice(1); // skip headers
-
-  // Map each row to an object using headers
-  return dataRows.map(row => {
-    const obj: any = {};
-    headers.forEach((key, i) => {
-      if(row[i] !== undefined && row[i] !== null && String(row[i]).trim() !== '') {
-      obj[key || `col_${i+1}`] = row[i] !== undefined ? row[i] : '';
-      }
-    });
-    
-    return obj;
-  });
-}
   private extractErrorMessage(error: unknown): string {
     if (error instanceof Error) {
       return error.message;

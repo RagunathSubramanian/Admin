@@ -52,3 +52,7 @@ storybook-static
 
 *storybook.log
 /.vs/Admin/FileContentIndex
+.vs/Admin/v17/DocumentLayout.backup.json
+.vs/Admin/v17/DocumentLayout.json
+.vs/slnx.sqlite
+.vs/Admin/v17/.wsuo
