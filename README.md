@@ -69,6 +69,7 @@ Navigate to `http://localhost:4200/`
 
 ng build --configuration=production --base-href "/"   
 npx angular-cli-ghpages --dir=dist/angular-admin-dashboard/browser --branch=gh-pages
+npx angular-cli-ghpages --dir=dist/angular-admin-dashboard/browser --branch=gh-pages --cname=admin.isquare.com.sg
 npm run build:prod
 ```
 
