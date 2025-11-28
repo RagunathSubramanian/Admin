@@ -205,7 +205,7 @@ export class DashboardComponent implements OnInit {
       return this.createLineChartData([], []);
     }
 
-    const monthlyTotals = this.groupAndSum(records, (record) =>
+    const monthlyTotals = this.groupAndSumByDropCount(records, (record) =>
       record.Month || this.tryGetMonthFromDate(record.DATE),
     );
 
@@ -239,11 +239,11 @@ export class DashboardComponent implements OnInit {
       
       const existing = dailyMap.get(dateKey);
       if (existing) {
-        existing.value += this.ensureNumber(record['Total Drops']);
+        existing.value += this.ensureNumber(record.DropCount);
       } else {
         dailyMap.set(dateKey, {
           date: dateObj,
-          value: this.ensureNumber(record['Total Drops']),
+          value: this.ensureNumber(record.DropCount),
         });
       }
     });
@@ -303,10 +303,9 @@ export class DashboardComponent implements OnInit {
       });
     }
 
-    const employeeTotals = this.groupAndSum(
+    const employeeTotals = this.groupAndSumByDropCount(
       records,
       (record) => record.NAME?.trim() || 'Unknown',
-      'Total Drops',
     );
 
     return this.createBarChartData(
@@ -360,10 +359,10 @@ export class DashboardComponent implements OnInit {
       },
       {
         label: 'Single Drops',
-        value: this.sumNumeric(records, 'Total Drops') -
+        value: records.reduce((total, record) => total + this.ensureNumber(record.DropCount), 0) -
                this.sumNumeric(records, 'Multi Drops') -
                this.sumNumeric(records, 'Heavy Drops') -
-               this.sumNumeric(records, 'Walkup Drop Count') -
+              
                this.sumNumeric(records, 'Double Drop Count'),
       },
     ];
@@ -412,7 +411,9 @@ export class DashboardComponent implements OnInit {
   public averageDropsTrendChartType: ChartType = 'line';
 
   totalDrops = computed(() =>
-    this.sumNumeric(this.filteredRecords(), 'Total Drops'),
+    this.filteredRecords().reduce((total, record) => {
+      return total + this.ensureNumber(record.DropCount);
+    }, 0),
   );
   multiDrops = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Multi Drops'),
@@ -448,7 +449,7 @@ dailyTotals = computed(() =>{
         record['Email Address'] ||
         `${index}`,
       user: record.NAME?.trim() || 'Unknown driver',
-      action: `${this.ensureNumber(record['Total Drops'])} drops • Shift ${record.Shift || 'N/A'}`,
+      action: `${this.ensureNumber(record.DropCount)} drops • Shift ${record.Shift || 'N/A'}`,
       time: this.formatTimestamp(record.Timestamp || record.DATE),
     }));
   });
@@ -563,7 +564,7 @@ dailyTotals = computed(() =>{
   private createLineChartData(
     labels: string[],
     data: number[],
-    datasetLabel = 'Total Drops',
+    datasetLabel = 'Drop Count',
     color: { background: string; border: string } = {
       background: 'rgba(59, 130, 246, 0.1)',
       border: 'rgba(59, 130, 246, 1)',
@@ -658,6 +659,25 @@ dailyTotals = computed(() =>{
       const key = keySelector(record) || 'Unknown';
       const current = accumulator.get(key) ?? 0;
       const nextValue = current + this.ensureNumber(record[valueKey]);
+      accumulator.set(key, nextValue);
+    });
+
+    const labels = Array.from(accumulator.keys());
+    const values = labels.map((label) => accumulator.get(label) ?? 0);
+
+    return { labels, values };
+  }
+
+  private groupAndSumByDropCount(
+    records: DashboardDataModel,
+    keySelector: (record: DashboardDataRecord) => string | undefined,
+  ): { labels: string[]; values: number[] } {
+    const accumulator = new Map<string, number>();
+
+    records.forEach((record) => {
+      const key = keySelector(record) || 'Unknown';
+      const current = accumulator.get(key) ?? 0;
+      const nextValue = current + this.ensureNumber(record.DropCount);
       accumulator.set(key, nextValue);
     });
 
@@ -812,7 +832,7 @@ dailyTotals = computed(() =>{
           employees: new Set<string>(),
         };
 
-      entry.totalDrops += this.ensureNumber(record['Total Drops']);
+      entry.totalDrops += this.ensureNumber(record.DropCount);
       entry.employees.add(record.NAME?.trim() || 'Unknown');
       accumulator.set(key, entry);
     });
@@ -850,7 +870,7 @@ dailyTotals = computed(() =>{
           latestRecord: record,
         };
 
-      entry.totalDrops += this.ensureNumber(record['Total Drops']);
+      entry.totalDrops += this.ensureNumber(record.DropCount);
       entry.multiDrops += this.ensureNumber(record['Multi Drops']);
       entry.heavyDrops += this.ensureNumber(record['Heavy Drops']);
       entry.walkupDrops += this.ensureNumber(record['Walkup Drop Count']);

@@ -63,9 +63,12 @@
     <app-card>
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-500">Total Drops</p>
+          <p class="text-sm font-medium text-gray-500">Drop Count</p>
           <p class="mt-1 text-2xl font-semibold text-gray-900">
             {{ totalDrops() | number }}
+          </p>
+          <p class="mt-1 text-xs text-gray-500">
+            Single drops: {{ totalDrops() - multiDrops() - heavyDrops()  - doubleDropCount() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
             Multi drops: {{ multiDrops() | number }}
@@ -81,6 +84,8 @@
           </p>
            <p class="mt-1 text-xs text-gray-500">
             Avg drops/day : {{ totalDrops() / dailyTotals() | number }}
+          </p>
+            <p class="mt-1 text-xs text-gray-500">
             Day Count : {{  dailyTotals() | number }}
           </p>
         </div>
@@ -179,7 +184,7 @@
 
     <app-chart-wrapper
       title="Daily Drops Trends"
-      subtitle="Total drops per day"
+      subtitle="Drop count per day"
       [chartData]="dailyTrendsChartData()"
       [chartOptions]="dailyTrendsChartOptions"
       [chartType]="dailyTrendsChartType"
@@ -199,7 +204,7 @@
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
       <app-chart-wrapper
         title="Drops per Employee"
-        subtitle="Total drops by team member"
+        subtitle="Drop count by team member"
         [chartData]="dropsPerEmployeeChartData()"
         [chartOptions]="dropsPerEmployeeChartOptions"
         [chartType]="dropsPerEmployeeChartType"
@@ -226,7 +231,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <app-card title="Top Performer" subtitle="Highest total drops across all shifts">
+      <app-card title="Top Performer" subtitle="Highest drop count across all shifts">
         @if (topPerformer()) {
           <div class="space-y-2">
             <div>
@@ -237,7 +242,7 @@
             </div>
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p class="text-gray-500">Total Drops</p>
+                <p class="text-gray-500">Drop Count</p>
                 <p class="font-semibold text-gray-900">
                   {{ topPerformer()?.totalDrops | number }}
                 </p>
@@ -284,7 +289,7 @@
                   </span>
                 </div>
                 <p class="mt-1 text-xs text-red-500">
-                  Total drops: {{ employee.totalDrops | number }}
+                  Drop count: {{ employee.totalDrops | number }}
                 </p>
               </div>
             }

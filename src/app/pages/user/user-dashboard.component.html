@@ -65,9 +65,12 @@
     <app-card>
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-500">Total Drops</p>
+          <p class="text-sm font-medium text-gray-500">Drop Count</p>
           <p class="mt-1 text-2xl font-semibold text-gray-900">
             {{ totalDrops() | number }}
+          </p>
+          <p class="mt-1 text-xs text-gray-500">
+            Single drops: {{ totalDrops() - multiDrops() - heavyDrops() - walkupDropCount() - doubleDropCount() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
             Multi drops: {{ multiDrops() | number }}
@@ -145,7 +148,7 @@
 
     <app-chart-wrapper
       title="Daily Drops Trends"
-      subtitle="Total drops per day"
+      subtitle="Drop count per day"
       [chartData]="dailyTrendsChartData()"
       [chartOptions]="dailyTrendsChartOptions"
       [chartType]="dailyTrendsChartType"

@@ -195,7 +195,7 @@ export class UserDashboardComponent implements OnInit {
       return this.createLineChartData([], []);
     }
 
-    const monthlyTotals = this.groupAndSum(records, (record) =>
+    const monthlyTotals = this.groupAndSumByDropCount(records, (record) =>
       record.Month || this.tryGetMonthFromDate(record.DATE),
     );
 
@@ -227,11 +227,11 @@ export class UserDashboardComponent implements OnInit {
       
       const existing = dailyMap.get(dateKey);
       if (existing) {
-        existing.value += this.ensureNumber(record['Total Drops']);
+        existing.value += this.ensureNumber(record.DropCount);
       } else {
         dailyMap.set(dateKey, {
           date: dateObj,
-          value: this.ensureNumber(record['Total Drops']),
+          value: this.ensureNumber(record.DropCount),
         });
       }
     });
@@ -306,7 +306,7 @@ export class UserDashboardComponent implements OnInit {
       },
       {
         label: 'Single Drops',
-        value: this.sumNumeric(records, 'Total Drops') -
+        value: records.reduce((total, record) => total + this.ensureNumber(record.DropCount), 0) -
                this.sumNumeric(records, 'Multi Drops') -
                this.sumNumeric(records, 'Heavy Drops') -
                this.sumNumeric(records, 'Walkup Drop Count') -
@@ -339,7 +339,9 @@ export class UserDashboardComponent implements OnInit {
   public dropTypeChartType: ChartType = 'pie';
 
   totalDrops = computed(() =>
-    this.sumNumeric(this.filteredRecords(), 'Total Drops'),
+    this.filteredRecords().reduce((total, record) => {
+      return total + this.ensureNumber(record.DropCount);
+    }, 0),
   );
   multiDrops = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Multi Drops'),
@@ -552,7 +554,7 @@ export class UserDashboardComponent implements OnInit {
   private createLineChartData(
     labels: string[],
     data: number[],
-    datasetLabel = 'Total Drops',
+    datasetLabel = 'Drop Count',
     color: { background: string; border: string } = {
       background: 'rgba(59, 130, 246, 0.1)',
       border: 'rgba(59, 130, 246, 1)',
@@ -624,6 +626,25 @@ export class UserDashboardComponent implements OnInit {
       const key = keySelector(record) || 'Unknown';
       const current = accumulator.get(key) ?? 0;
       const nextValue = current + this.ensureNumber(record[valueKey]);
+      accumulator.set(key, nextValue);
+    });
+
+    const labels = Array.from(accumulator.keys());
+    const values = labels.map((label) => accumulator.get(label) ?? 0);
+
+    return { labels, values };
+  }
+
+  private groupAndSumByDropCount(
+    records: DashboardDataModel,
+    keySelector: (record: DashboardDataRecord) => string | undefined,
+  ): { labels: string[]; values: number[] } {
+    const accumulator = new Map<string, number>();
+
+    records.forEach((record) => {
+      const key = keySelector(record) || 'Unknown';
+      const current = accumulator.get(key) ?? 0;
+      const nextValue = current + this.ensureNumber(record.DropCount);
       accumulator.set(key, nextValue);
     });
 
