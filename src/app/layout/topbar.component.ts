@@ -1,9 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, Input, Output, EventEmitter, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { IconButtonComponent } from '../shared/components/icon-button.component';
 import { AvatarComponent } from '../shared/components/avatar.component';
 import { ThemeToggleComponent } from '../shared/components/theme-toggle.component';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-topbar',
@@ -13,11 +14,26 @@ import { ThemeToggleComponent } from '../shared/components/theme-toggle.componen
   styleUrls: ['./topbar.component.css'],
 })
 export class TopbarComponent {
-  // TODO: Replace with actual user data from AuthService
-  currentUser = signal({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatar: '',
+  private readonly authService = inject(AuthService);
+  
+  @Input() mobileMenuOpen: boolean = false;
+  @Output() toggleMobileMenu = new EventEmitter<void>();
+
+  // Get current user from AuthService
+  currentUser = computed(() => {
+    const user = this.authService.currentUser();
+    if (user) {
+      return {
+        name: user.name,
+        email: user.email,
+        avatar: '',
+      };
+    }
+    return {
+      name: 'Guest',
+      email: '',
+      avatar: '',
+    };
   });
 
   notificationsCount = signal(3);
@@ -34,9 +50,13 @@ export class TopbarComponent {
     this.showNotifications.set(false);
   }
 
-  // TODO: Implement logout
+  onMobileMenuClick(): void {
+    this.toggleMobileMenu.emit();
+  }
+
   logout() {
-    console.log('Logout clicked');
+    this.authService.logout();
+    this.showUserMenu.set(false);
   }
 }
 

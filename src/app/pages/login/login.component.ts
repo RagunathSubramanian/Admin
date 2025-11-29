@@ -44,9 +44,14 @@ export class LoginComponent {
       const { email, password } = this.loginForm.value;
       
       this.authService.login(email, password).subscribe({
-        next: () => {
+        next: (user) => {
           this.isLoading.set(false);
-          this.router.navigate(['/dashboard']);
+          // Redirect based on user role
+          if (user.role === 'admin') {
+            this.router.navigate(['/dashboard']);
+          } else {
+            this.router.navigate(['/user/dashboard']);
+          }
         },
         error: (err) => {
           this.isLoading.set(false);

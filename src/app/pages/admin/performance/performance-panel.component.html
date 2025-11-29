@@ -78,10 +78,11 @@
                     </p>
                   </div>
                   <div class="text-right">
-                    <p class="text-xs text-gray-400">Total Drops</p>
+                    <p class="text-xs text-gray-400">Drop Count</p>
                     <p class="text-sm font-semibold text-gray-900">
                       {{ employee.totalDrops | number }}
                     </p>
+              
                   </div>
                 </div>
                 <div class="flex items-center justify-between gap-2 text-xs">
@@ -141,15 +142,34 @@
 
             <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                <p class="text-xs uppercase text-gray-400">Total Drops</p>
+                <p class="text-xs uppercase text-gray-400">Drop Count</p>
                 <p class="mt-1 text-lg font-semibold text-gray-900">
                   {{ employee.totalDrops | number }}
                 </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Single drops: {{ employee.totalDrops - employee.multiDrops - employee.heavyDrops - employee.doubleDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Multi drops: {{ employee.multiDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Heavy drops: {{ employee.heavyDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Walkup drops: {{ employee.walkupDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Double drops: {{ employee.doubleDrops | number }}
+                </p>
+               
               </div>
               <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
                 <p class="text-xs uppercase text-gray-400">Average / Day</p>
                 <p class="mt-1 text-lg font-semibold text-gray-900">
                   {{ employee.averageDropsPerDay | number: '1.0-1' }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Day Count : {{  employee.dailyTotals.size | number }}
                 </p>
               </div>
              

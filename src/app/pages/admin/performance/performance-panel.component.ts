@@ -13,9 +13,9 @@ import {
   DashboardDataModel,
   DashboardDataRecord,
 } from '../dashboard/dashboard-data.model';
-import { CardComponent } from '../../shared/components/card.component';
-import { ChartWrapperComponent } from '../../shared/components/chart-wrapper.component';
-import { DataTableComponent, DataTableColumn } from '../../shared/components/data-table.component';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ChartWrapperComponent } from '../../../shared/components/chart-wrapper.component';
+import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table.component';
 
 type PerformanceRange = 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -179,6 +179,7 @@ export class PerformancePanelComponent {
           hireDate: null,
           dailyTotals: new Map<string, number>(),
           dropTypes: {
+            'Single Drops': 0,
             'Multi Drops': 0,
             'Heavy Drops': 0,
             'Walkup Drop Count': 0,
@@ -200,16 +201,19 @@ export class PerformancePanelComponent {
         const currentValue = aggregate.dailyTotals.get(key) ?? 0;
         aggregate.dailyTotals.set(
           key,
-          currentValue + this.ensureNumber(record['Total Drops']),
+          currentValue + this.ensureNumber(record.DropCount),
         );
       }
 
-      aggregate.totalDrops += this.ensureNumber(record['Total Drops']);
+      aggregate.totalDrops += this.ensureNumber(record.DropCount);
       aggregate.amount += this.ensureNumber(record.Amount);
       aggregate.multiDrops += this.ensureNumber(record['Multi Drops']);
       aggregate.heavyDrops += this.ensureNumber(record['Heavy Drops']);
       aggregate.walkupDrops += this.ensureNumber(record['Walkup Drop Count']);
       aggregate.doubleDrops += this.ensureNumber(record['Double Drop Count']);
+      aggregate.dropTypes['Single Drops'] += this.ensureNumber(
+        record['DropCount'] - record['Multi Drops'] - record['Heavy Drops']  - record['Double Drop Count'],
+      );
       aggregate.dropTypes['Multi Drops'] += this.ensureNumber(
         record['Multi Drops'],
       );
@@ -371,10 +375,9 @@ export class PerformancePanelComponent {
       return this.createBarChartData([], [], 'Drops by Shift');
     }
 
-    const shiftTotals = this.groupAndSum(
+    const shiftTotals = this.groupAndSumByDropCount(
       employee.records,
       (record) => record.Shift || 'Unassigned',
-      'Total Drops',
     );
 
     return this.createBarChartData(
@@ -568,14 +571,29 @@ export class PerformancePanelComponent {
   }
 
   private formatDateKey(date: Date): string {
-    return date.toISOString().split('T')[0];
+    // Use local date components to avoid UTC timezone shifting the calendar day,
+    // which can make a local 2-Jan appear as 1-Jan in the chart labels.
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private formatDisplayDate(key: string): string {
-    const date = new Date(key);
-    if (Number.isNaN(date.getTime())) {
+    // Parse our YYYY-MM-DD keys as a local date so labels stay aligned with the
+    // original data instead of being shifted by timezone handling.
+    const parts = key.split('-');
+    if (parts.length !== 3) {
       return key;
     }
+    const [yearStr, monthStr, dayStr] = parts;
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
+    if (!year || !month || !day) {
+      return key;
+    }
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
@@ -667,6 +685,25 @@ export class PerformancePanelComponent {
       const current = accumulator.get(key) ?? 0;
       const value = this.ensureNumber(record[valueKey]);
       accumulator.set(key, current + value);
+    });
+
+    const labels = Array.from(accumulator.keys());
+    const values = labels.map((label) => accumulator.get(label) ?? 0);
+
+    return { labels, values };
+  }
+
+  private groupAndSumByDropCount(
+    records: DashboardDataRecord[],
+    keySelector: (record: DashboardDataRecord) => string,
+  ): { labels: string[]; values: number[] } {
+    const accumulator = new Map<string, number>();
+
+    records.forEach((record) => {
+      const key = keySelector(record) || 'Unknown';
+      const current = accumulator.get(key) ?? 0;
+      const nextValue = current + this.ensureNumber(record.DropCount);
+      accumulator.set(key, nextValue);
     });
 
     const labels = Array.from(accumulator.keys());
@@ -847,37 +884,37 @@ export class PerformancePanelComponent {
         key: 'Total Drops', 
         label: 'Total Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Total Drops']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Total Drops']).toLocaleString()
       },
       { 
         key: 'Multi Drops', 
         label: 'Multi Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Multi Drops']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Multi Drops']).toLocaleString()
       },
       { 
         key: 'Heavy Drops', 
         label: 'Heavy Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Heavy Drops']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Heavy Drops']).toLocaleString()
       },
       { 
         key: 'Walkup Drop Count', 
         label: 'Walkup Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Walkup Drop Count']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Walkup Drop Count']).toLocaleString()
       },
       { 
         key: 'Double Drop Count', 
         label: 'Double Drops', 
         sortable: true,
-        render: (row) => this.ensureNumber(row['Double Drop Count']).toLocaleString()
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Double Drop Count']).toLocaleString()
       },
       { 
         key: 'Amount', 
         label: 'Amount', 
         sortable: true,
-        render: (row) => new Intl.NumberFormat(undefined, {
+        render: (row: DashboardDataRecord) => new Intl.NumberFormat(undefined, {
           style: 'currency',
           currency: 'SGD',
           maximumFractionDigits: 0,
@@ -892,37 +929,37 @@ export class PerformancePanelComponent {
         key: 'Total Drops', 
         label: 'Total Drops', 
         sortable: true,
-        render: (row) => row['Total Drops'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Total Drops'].toLocaleString()
       },
       { 
         key: 'Multi Drops', 
         label: 'Multi Drops', 
         sortable: true,
-        render: (row) => row['Multi Drops'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Multi Drops'].toLocaleString()
       },
       { 
         key: 'Heavy Drops', 
         label: 'Heavy Drops', 
         sortable: true,
-        render: (row) => row['Heavy Drops'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Heavy Drops'].toLocaleString()
       },
       { 
         key: 'Walkup Drop Count', 
         label: 'Walkup Drops', 
         sortable: true,
-        render: (row) => row['Walkup Drop Count'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Walkup Drop Count'].toLocaleString()
       },
       { 
         key: 'Double Drop Count', 
         label: 'Double Drops', 
         sortable: true,
-        render: (row) => row['Double Drop Count'].toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row['Double Drop Count'].toLocaleString()
       },
       { 
         key: 'Amount', 
         label: 'Amount', 
         sortable: true,
-        render: (row) => new Intl.NumberFormat(undefined, {
+        render: (row: GroupedPerformanceRecord) => new Intl.NumberFormat(undefined, {
           style: 'currency',
           currency: 'SGD',
           maximumFractionDigits: 0,
@@ -932,7 +969,7 @@ export class PerformancePanelComponent {
         key: 'DropCount', 
         label: 'Drop Count', 
         sortable: true,
-        render: (row) => row.DropCount.toLocaleString()
+        render: (row: GroupedPerformanceRecord) => row.DropCount.toLocaleString()
       },
     ];
 

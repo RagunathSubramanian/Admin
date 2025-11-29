@@ -17,7 +17,7 @@ import {
   ChartWrapperComponent,
   IconButtonComponent,
   FormFieldComponent,
-} from '../../shared/components';
+} from '../../../shared/components';
 import { ChartConfiguration, ChartType } from 'chart.js';
 
 interface User {

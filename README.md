@@ -20,9 +20,19 @@ src/
 ├── app/
 │   ├── core/
 │   │   ├── guards/          # Route guards (auth, role-based)
-│   │   └── services/        # Core services (API, Auth)
+│   │   └── services/        # Core services (API, Auth, Dashboard, UserConfig)
 │   ├── layout/              # Layout components (AppShell, Topbar, Sidebar)
-│   ├── pages/               # Feature pages (Dashboard, Users, Settings, Login)
+│   ├── pages/               # Feature pages
+│   │   ├── admin/           # Admin-only pages
+│   │   │   ├── dashboard/   # Admin Dashboard
+│   │   │   ├── performance/ # Admin Performance
+│   │   │   ├── settings/    # Settings (Admin config)
+│   │   │   ├── users/       # User Management
+│   │   │   └── components/  # Components Library
+│   │   ├── user/            # User-specific pages
+│   │   │   ├── user-dashboard.component.ts
+│   │   │   └── user-performance.component.ts
+│   │   └── login/           # Login page
 │   └── shared/
 │       └── components/      # Reusable UI components
 ├── assets/                  # Static assets

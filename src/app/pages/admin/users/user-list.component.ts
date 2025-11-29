@@ -1,10 +1,10 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { CardComponent } from '../../shared/components/card.component';
-import { ButtonComponent } from '../../shared/components/button.component';
-import { TableComponent, TableColumn } from '../../shared/components/table.component';
-import { ApiService } from '../../core/services/api.service';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ButtonComponent } from '../../../shared/components/button.component';
+import { TableComponent, TableColumn } from '../../../shared/components/table.component';
+import { ApiService } from '../../../core/services/api.service';
 
 interface User {
   id: number;
@@ -43,7 +43,7 @@ export class UserListComponent implements OnInit {
       key: 'status',
       label: 'Status',
       sortable: true,
-      render: (user) => user.status,
+      render: (user: User) => user.status,
     },
     { key: 'createdAt', label: 'Created', sortable: true },
   ];
