@@ -10,13 +10,14 @@
 
   <!-- Navigation Items -->
   <nav class="flex-1 p-4 space-y-1" aria-label="Main navigation">
-    @for (item of navItems; track item.route) {
+    @for (item of visibleNavItems(); track item.route) {
       <a
         [routerLink]="item.route"
         routerLinkActive="bg-primary-50 text-primary-700 border-primary-500"
         [routerLinkActiveOptions]="{ exact: false }"
-        class="flex items-center gap-3 px-4 py-3 rounded-lg theme-text-secondary hover:bg-gray-100 hover:text-gray-900 transition-colors border-l-4 border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        class="flex items-center gap-3 px-4 py-3 rounded-lg theme-text-secondary hover:bg-gray-100 hover:text-gray-900 transition-colors border-l-4 border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 md:focus:ring-offset-0"
         [attr.aria-current]="isActive(item.route) ? 'page' : null"
+        (click)="menuItemClick.emit()"
       >
         <svg
           class="h-5 w-5 flex-shrink-0"

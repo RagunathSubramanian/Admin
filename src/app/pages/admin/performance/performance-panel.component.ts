@@ -13,9 +13,9 @@ import {
   DashboardDataModel,
   DashboardDataRecord,
 } from '../dashboard/dashboard-data.model';
-import { CardComponent } from '../../shared/components/card.component';
-import { ChartWrapperComponent } from '../../shared/components/chart-wrapper.component';
-//import { DataTableComponent } from '@app/shared/components';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ChartWrapperComponent } from '../../../shared/components/chart-wrapper.component';
+import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table.component';
 
 type PerformanceRange = 'today' | 'week' | 'month' | 'year' | 'custom';
 
@@ -48,12 +48,22 @@ interface EmployeeSummary {
   records: DashboardDataRecord[];
 }
 
+interface GroupedPerformanceRecord {
+  DATE: string;
+  NAME: string;
+  'Total Drops': number;
+  'Multi Drops': number;
+  'Heavy Drops': number;
+  'Walkup Drop Count': number;
+  'Double Drop Count': number;
+  Amount: number;
+  DropCount: number;
+}
+
 @Component({
   selector: 'app-performance-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardComponent, ChartWrapperComponent,
-   //  DataTableComponent
-    ],
+  imports: [CommonModule, FormsModule, CardComponent, ChartWrapperComponent, DataTableComponent],
   templateUrl: './performance-panel.component.html',
 })
 export class PerformancePanelComponent {
@@ -169,6 +179,7 @@ export class PerformancePanelComponent {
           hireDate: null,
           dailyTotals: new Map<string, number>(),
           dropTypes: {
+            'Single Drops': 0,
             'Multi Drops': 0,
             'Heavy Drops': 0,
             'Walkup Drop Count': 0,
@@ -190,16 +201,19 @@ export class PerformancePanelComponent {
         const currentValue = aggregate.dailyTotals.get(key) ?? 0;
         aggregate.dailyTotals.set(
           key,
-          currentValue + this.ensureNumber(record['Total Drops']),
+          currentValue + this.ensureNumber(record.DropCount),
         );
       }
 
-      aggregate.totalDrops += this.ensureNumber(record['Total Drops']);
+      aggregate.totalDrops += this.ensureNumber(record.DropCount);
       aggregate.amount += this.ensureNumber(record.Amount);
       aggregate.multiDrops += this.ensureNumber(record['Multi Drops']);
       aggregate.heavyDrops += this.ensureNumber(record['Heavy Drops']);
       aggregate.walkupDrops += this.ensureNumber(record['Walkup Drop Count']);
       aggregate.doubleDrops += this.ensureNumber(record['Double Drop Count']);
+      aggregate.dropTypes['Single Drops'] += this.ensureNumber(
+        record['DropCount'] - record['Multi Drops'] - record['Heavy Drops']  - record['Double Drop Count'],
+      );
       aggregate.dropTypes['Multi Drops'] += this.ensureNumber(
         record['Multi Drops'],
       );
@@ -361,10 +375,9 @@ export class PerformancePanelComponent {
       return this.createBarChartData([], [], 'Drops by Shift');
     }
 
-    const shiftTotals = this.groupAndSum(
+    const shiftTotals = this.groupAndSumByDropCount(
       employee.records,
       (record) => record.Shift || 'Unassigned',
-      'Total Drops',
     );
 
     return this.createBarChartData(
@@ -430,6 +443,18 @@ export class PerformancePanelComponent {
       if (!exists) {
         this.selectedEmployeeId.set(employees[0].id);
       }
+    });
+
+    // Update groupedTableDataSignal when groupedTableData changes
+    effect(() => {
+      const data = this.groupedTableData();
+      this.groupedTableDataSignal.set(data);
+    });
+
+    // Update dropRecordsTableDataSignal when dropRecordsTableData changes
+    effect(() => {
+      const data = this.dropRecordsTableData();
+      this.dropRecordsTableDataSignal.set(data);
     });
   }
 
@@ -546,14 +571,29 @@ export class PerformancePanelComponent {
   }
 
   private formatDateKey(date: Date): string {
-    return date.toISOString().split('T')[0];
+    // Use local date components to avoid UTC timezone shifting the calendar day,
+    // which can make a local 2-Jan appear as 1-Jan in the chart labels.
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private formatDisplayDate(key: string): string {
-    const date = new Date(key);
-    if (Number.isNaN(date.getTime())) {
+    // Parse our YYYY-MM-DD keys as a local date so labels stay aligned with the
+    // original data instead of being shifted by timezone handling.
+    const parts = key.split('-');
+    if (parts.length !== 3) {
       return key;
     }
+    const [yearStr, monthStr, dayStr] = parts;
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
+    if (!year || !month || !day) {
+      return key;
+    }
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
@@ -653,6 +693,25 @@ export class PerformancePanelComponent {
     return { labels, values };
   }
 
+  private groupAndSumByDropCount(
+    records: DashboardDataRecord[],
+    keySelector: (record: DashboardDataRecord) => string,
+  ): { labels: string[]; values: number[] } {
+    const accumulator = new Map<string, number>();
+
+    records.forEach((record) => {
+      const key = keySelector(record) || 'Unknown';
+      const current = accumulator.get(key) ?? 0;
+      const nextValue = current + this.ensureNumber(record.DropCount);
+      accumulator.set(key, nextValue);
+    });
+
+    const labels = Array.from(accumulator.keys());
+    const values = labels.map((label) => accumulator.get(label) ?? 0);
+
+    return { labels, values };
+  }
+
   getTrendIcon(direction: 'up' | 'down' | 'flat'): string {
     switch (direction) {
       case 'up':
@@ -735,69 +794,184 @@ export class PerformancePanelComponent {
 
 
     filteredTableData = computed(() => {
-
       return this.selectedEmployee()?.records || [];
-      // const filters = this.tableFilters();
-      // const sort = this.sortState();
-      // const employee = this.selectedEmployee();
-      // const records = employee?.records || [];
-      
-  
-      // const filtered = records.filter((record) =>
-      //   this.tableColumns.every((column) => {
-      //     const filterValue = filters[column.key as string];
-      //     if (!filterValue) {
-      //       return true;
-      //     }
-  
-      //     const cellValue = record[column.key];
-      //     if (cellValue === null || cellValue === undefined) {
-      //       return false;
-      //     }
-  
-      //     if (column.type === 'number') {
-      //       const numericFilter = Number(filterValue);
-      //       if (Number.isNaN(numericFilter)) {
-      //         return true;
-      //       }
-      //       return Number(cellValue) === numericFilter;
-      //     }
-  
-      //     const normalizedCell = String(cellValue).toLowerCase();
-      //     return normalizedCell.includes(filterValue.toLowerCase());
-      //   }),
-      // );
-  
-      // if (!sort) {
-      //   return filtered;
-      // }
-  
-      // const columnMeta = this.tableColumns.find(
-      //   (column) => column.key === sort.key,
-      // );
-  
-      // return [...filtered].sort((a, b) => {
-      //   const aValue = a[sort.key];
-      //   const bValue = b[sort.key];
-  
-      //   if (columnMeta?.numeric) {
-      //     const aNumber = this.ensureNumber(aValue);
-      //     const bNumber = this.ensureNumber(bValue);
-      //     return sort.direction === 'asc'
-      //       ? aNumber - bNumber
-      //       : bNumber - aNumber;
-      //   }
-  
-      //   const aString = String(aValue ?? '');
-      //   const bString = String(bValue ?? '');
-      //   const comparison = aString.localeCompare(bString, undefined, {
-      //     sensitivity: 'base',
-      //     numeric: true,
-      //   });
-  
-      //   return sort.direction === 'asc' ? comparison : -comparison;
-      // });
     });
+
+    // Grouped data by DATE, excluding Shift, ordered by date desc
+    groupedTableData = computed(() => {
+      const records = this.filteredTableData();
+      if (!records.length) {
+        return [];
+      }
+
+      const groupedMap = new Map<string, GroupedPerformanceRecord>();
+
+      records.forEach((record) => {
+        const date = record.DATE || 'Unknown';
+        const name = record.NAME || 'Unknown';
+        const key = `${date}|${name}`;
+
+        const existing = groupedMap.get(key);
+        if (existing) {
+          existing['Total Drops'] += this.ensureNumber(record['Total Drops']);
+          existing['Multi Drops'] += this.ensureNumber(record['Multi Drops']);
+          existing['Heavy Drops'] += this.ensureNumber(record['Heavy Drops']);
+          existing['Walkup Drop Count'] += this.ensureNumber(record['Walkup Drop Count']);
+          existing['Double Drop Count'] += this.ensureNumber(record['Double Drop Count']);
+          existing.Amount += this.ensureNumber(record.Amount);
+          existing.DropCount += this.ensureNumber(record.DropCount || 0);
+        } else {
+          groupedMap.set(key, {
+            DATE: date,
+            NAME: name,
+            'Total Drops': this.ensureNumber(record['Total Drops']),
+            'Multi Drops': this.ensureNumber(record['Multi Drops']),
+            'Heavy Drops': this.ensureNumber(record['Heavy Drops']),
+            'Walkup Drop Count': this.ensureNumber(record['Walkup Drop Count']),
+            'Double Drop Count': this.ensureNumber(record['Double Drop Count']),
+            Amount: this.ensureNumber(record.Amount),
+            DropCount: this.ensureNumber(record.DropCount || 0),
+          });
+        }
+      });
+
+      const groupedArray = Array.from(groupedMap.values());
+      
+      // Sort by date descending (newest first)
+      return groupedArray.sort((a, b) => {
+        const dateA = this.parseRecordDate({ DATE: a.DATE } as DashboardDataRecord);
+        const dateB = this.parseRecordDate({ DATE: b.DATE } as DashboardDataRecord);
+        
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        
+        return dateB.getTime() - dateA.getTime(); // Descending order
+      });
+    });
+
+    groupedTableDataSignal = signal<GroupedPerformanceRecord[]>([]);
+    groupedTablePageSize = signal(10);
+
+    // Drop Records table - all data from filteredTableData ordered by date desc
+    dropRecordsTableData = computed(() => {
+      const records = this.filteredTableData();
+      if (!records.length) {
+        return [];
+      }
+
+      // Sort by date descending (newest first)
+      return [...records].sort((a, b) => {
+        const dateA = this.parseRecordDate(a);
+        const dateB = this.parseRecordDate(b);
+        
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        
+        return dateB.getTime() - dateA.getTime(); // Descending order
+      });
+    });
+
+    dropRecordsTableDataSignal = signal<DashboardDataRecord[]>([]);
+    dropRecordsTablePageSize = signal(10);
+
+    dropRecordsTableColumns: DataTableColumn<DashboardDataRecord>[] = [
+      { key: 'DATE', label: 'Date', sortable: true, filterable: true },
+      { key: 'NAME', label: 'Name', sortable: true, filterable: true },
+      { key: 'Shift', label: 'Shift', sortable: true, filterable: true },
+      { 
+        key: 'Total Drops', 
+        label: 'Total Drops', 
+        sortable: true,
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Total Drops']).toLocaleString()
+      },
+      { 
+        key: 'Multi Drops', 
+        label: 'Multi Drops', 
+        sortable: true,
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Multi Drops']).toLocaleString()
+      },
+      { 
+        key: 'Heavy Drops', 
+        label: 'Heavy Drops', 
+        sortable: true,
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Heavy Drops']).toLocaleString()
+      },
+      { 
+        key: 'Walkup Drop Count', 
+        label: 'Walkup Drops', 
+        sortable: true,
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Walkup Drop Count']).toLocaleString()
+      },
+      { 
+        key: 'Double Drop Count', 
+        label: 'Double Drops', 
+        sortable: true,
+        render: (row: DashboardDataRecord) => this.ensureNumber(row['Double Drop Count']).toLocaleString()
+      },
+      { 
+        key: 'Amount', 
+        label: 'Amount', 
+        sortable: true,
+        render: (row: DashboardDataRecord) => new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency: 'SGD',
+          maximumFractionDigits: 0,
+        }).format(this.ensureNumber(row.Amount))
+      },
+    ];
+
+    groupedTableColumns: DataTableColumn<GroupedPerformanceRecord>[] = [
+      { key: 'DATE', label: 'Date', sortable: true, filterable: true },
+      { key: 'NAME', label: 'Name', sortable: true, filterable: true },
+      { 
+        key: 'Total Drops', 
+        label: 'Total Drops', 
+        sortable: true,
+        render: (row: GroupedPerformanceRecord) => row['Total Drops'].toLocaleString()
+      },
+      { 
+        key: 'Multi Drops', 
+        label: 'Multi Drops', 
+        sortable: true,
+        render: (row: GroupedPerformanceRecord) => row['Multi Drops'].toLocaleString()
+      },
+      { 
+        key: 'Heavy Drops', 
+        label: 'Heavy Drops', 
+        sortable: true,
+        render: (row: GroupedPerformanceRecord) => row['Heavy Drops'].toLocaleString()
+      },
+      { 
+        key: 'Walkup Drop Count', 
+        label: 'Walkup Drops', 
+        sortable: true,
+        render: (row: GroupedPerformanceRecord) => row['Walkup Drop Count'].toLocaleString()
+      },
+      { 
+        key: 'Double Drop Count', 
+        label: 'Double Drops', 
+        sortable: true,
+        render: (row: GroupedPerformanceRecord) => row['Double Drop Count'].toLocaleString()
+      },
+      { 
+        key: 'Amount', 
+        label: 'Amount', 
+        sortable: true,
+        render: (row: GroupedPerformanceRecord) => new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency: 'SGD',
+          maximumFractionDigits: 0,
+        }).format(row.Amount)
+      },
+      { 
+        key: 'DropCount', 
+        label: 'Drop Count', 
+        sortable: true,
+        render: (row: GroupedPerformanceRecord) => row.DropCount.toLocaleString()
+      },
+    ];
 
 
 updateFilter(columnKey: DashboardTableColumn['key'], value: string): void {

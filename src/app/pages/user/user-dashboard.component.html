@@ -1,8 +1,8 @@
 <div class="space-y-6">
   <!-- Page Header -->
   <div>
-    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-    <p class="mt-1 text-sm text-gray-500">Welcome back! Here's what's happening today.</p>
+    <h1 class="text-2xl font-bold text-gray-900">My Dashboard</h1>
+    <p class="mt-1 text-sm text-gray-500">View your performance data and statistics.</p>
   </div>
 
   @if (isLoading()) {
@@ -16,7 +16,8 @@
       {{ error() }}
     </div>
   }
-<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+
+  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-wrap gap-2">
       @for (option of rangeOptions; track option.value) {
         <button
@@ -58,14 +59,18 @@
       </button>
     </div>
   </div>
+
   <!-- Stats Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <app-card>
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-500">Total Drops</p>
+          <p class="text-sm font-medium text-gray-500">Drop Count</p>
           <p class="mt-1 text-2xl font-semibold text-gray-900">
             {{ totalDrops() | number }}
+          </p>
+          <p class="mt-1 text-xs text-gray-500">
+            Single drops: {{ totalDrops() - multiDrops() - heavyDrops() - walkupDropCount() - doubleDropCount() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
             Multi drops: {{ multiDrops() | number }}
@@ -79,63 +84,8 @@
           <p class="mt-1 text-xs text-gray-500">
             Double drops: {{ doubleDropCount() | number }}
           </p>
-           <p class="mt-1 text-xs text-gray-500">
-            Avg drops/day : {{ totalDrops() / dailyTotals() | number }}
-            Day Count : {{  dailyTotals() | number }}
-          </p>
-        </div>
-      <div class="p-3 bg-yellow-100 rounded-lg">
-          <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-          </svg>
-        </div>
-      </div>
-    </app-card>
-
-    <app-card>
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500">Active Employees</p>
-          <p class="mt-1 text-2xl font-semibold text-gray-900">
-            {{ activeEmployee() | number }}
-          </p>
-          
-        </div>
-    <div class="p-3 bg-primary-100 rounded-lg">
-          <svg class="h-6 w-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        </div>
-      </div>
-    </app-card>
-    <app-card>
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500">Total Sales</p>
-          <p class="mt-1 text-2xl font-semibold text-gray-900">
-            {{ totalAmount() | number }}
-          </p>
-           <p class="mt-1 text-xs text-gray-500">
-            Avg Sales/day : {{ totalAmount() / dailyTotals() | number }}
-          </p>
-        </div>
-        <div class="p-3 bg-green-100 rounded-lg">
-          <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-      </div>
-    </app-card>
-    <app-card>
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-500">Outstanding Invoices</p>
-          <p class="mt-1 text-2xl font-semibold text-gray-900">
-            {{ heavyDrops() | number }}
-          </p>
           <p class="mt-1 text-xs text-gray-500">
-            Average / shift:
-            {{ (recordsCount() ? heavyDrops() / recordsCount() : 0) | number: '1.0-1' }}
+            Avg drops/day: {{ totalDrops() / dailyTotals() | number: '1.0-1' }}
           </p>
         </div>
         <div class="p-3 bg-yellow-100 rounded-lg">
@@ -149,17 +99,36 @@
     <app-card>
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-500">Estimated Revenue</p>
+          <p class="text-sm font-medium text-gray-500">Days Active</p>
           <p class="mt-1 text-2xl font-semibold text-gray-900">
-            {{ totalAmount() - ((86*activeEmployee())*dailyTotals()) | currency: 'SGD  ':'symbol':'1.0-0' }}
+            {{ dailyTotals() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
             Records: {{ recordsCount() }}
           </p>
         </div>
-        <div class="p-3 bg-purple-100 rounded-lg">
-          <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <div class="p-3 bg-primary-100 rounded-lg">
+          <svg class="h-6 w-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+      </div>
+    </app-card>
+
+    <app-card>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500">Average per Day</p>
+          <p class="mt-1 text-2xl font-semibold text-gray-900">
+            {{ dailyTotals() > 0 ? (totalDrops() / dailyTotals() | number: '1.0-1') : 0 }}
+          </p>
+          <p class="mt-1 text-xs text-gray-500">
+            Total drops divided by active days
+          </p>
+        </div>
+        <div class="p-3 bg-green-100 rounded-lg">
+          <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         </div>
       </div>
@@ -171,135 +140,53 @@
     <app-chart-wrapper
       title="Monthly Drops"
       subtitle="Aggregated by month"
-      [chartData]="lineChartData"
+      [chartData]="lineChartData()"
       [chartOptions]="lineChartOptions"
       [chartType]="lineChartType"
       height="256px"
     />
 
     <app-chart-wrapper
-      title="Walkup Drops by Shift"
-      subtitle="Latest reporting period"
-      [chartData]="barChartData"
-      [chartOptions]="barChartOptions"
-      [chartType]="barChartType"
+      title="Daily Drops Trends"
+      subtitle="Drop count per day"
+      [chartData]="dailyTrendsChartData()"
+      [chartOptions]="dailyTrendsChartOptions"
+      [chartType]="dailyTrendsChartType"
       height="256px"
     />
   </div>
 
-  <!-- Operations Insights -->
-  <div class="space-y-6">
-    <div>
-      <h2 class="text-xl font-semibold text-gray-900">Operations</h2>
-      <p class="mt-1 text-sm text-gray-500">
-        Monitor drops performance across your team, spot top performers, and identify coaching opportunities.
-      </p>
-    </div>
+  <!-- Drop Type Distribution -->
+  <app-chart-wrapper
+    title="Drop Type Distribution"
+    subtitle="Share of drop categories"
+    [chartData]="dropTypeChartData()"
+    [chartOptions]="dropTypeChartOptions"
+    [chartType]="dropTypeChartType"
+    height="256px"
+  />
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      <app-chart-wrapper
-        title="Drops per Employee"
-        subtitle="Total drops by team member"
-        [chartData]="dropsPerEmployeeChartData"
-        [chartOptions]="dropsPerEmployeeChartOptions"
-        [chartType]="dropsPerEmployeeChartType"
-        height="256px"
-      />
-
-      <app-chart-wrapper
-        title="Drop Type Distribution"
-        subtitle="Share of drop categories"
-        [chartData]="dropTypeChartData"
-        [chartOptions]="dropTypeChartOptions"
-        [chartType]="dropTypeChartType"
-        height="256px"
-      />
-
-      <app-chart-wrapper
-        title="Average Drops per Employee"
-        subtitle="Monthly average trend"
-        [chartData]="averageDropsTrendChartData"
-        [chartOptions]="averageDropsTrendChartOptions"
-        [chartType]="averageDropsTrendChartType"
-        height="256px"
-      />
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <app-card title="Top Performer" subtitle="Highest total drops across all shifts">
-        @if (topPerformer()) {
-          <div class="space-y-2">
-            <div>
-              <p class="text-lg font-semibold text-gray-900">{{ topPerformer()?.name }}</p>
-              <p class="text-sm text-gray-500">
-                {{ topPerformer()?.shifts?.length ? topPerformer()?.shifts?.join(', ') : 'N/A' }}
-              </p>
-            </div>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p class="text-gray-500">Total Drops</p>
-                <p class="font-semibold text-gray-900">
-                  {{ topPerformer()?.totalDrops | number }}
-                </p>
-              </div>
-              <div>
-                <p class="text-gray-500">Avg / Shift</p>
-                <p class="font-semibold text-gray-900">
-                  {{ topPerformer()?.averageDrops | number: '1.0-1' }}
-                </p>
-              </div>
-            </div>
-            <p class="text-xs text-gray-400">
-              Latest activity:
-              {{
-                topPerformer()?.latest?.Timestamp
-                  ? (topPerformer()?.latest?.Timestamp | date: 'medium')
-                  : 'N/A'
-              }}
-            </p>
-          </div>
-        } @else {
-          <p class="text-sm text-gray-500">No performance data available.</p>
-        }
-      </app-card>
-
-      <app-card
-        title="Underperforming Employees"
-        [subtitle]="'Average drops per shift below ' + underperformerThreshold"
-        padding="sm"
-      >
-        @if (underperformingEmployees().length) {
-          <div class="space-y-3">
-            @for (employee of underperformingEmployees(); track employee.name) {
-              <div class="rounded-md border border-red-100 bg-red-50 px-4 py-3">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="font-semibold text-red-700">{{ employee.name }}</p>
-                    <p class="text-xs text-red-500">
-                      Shifts: {{ employee.shifts.join(', ') || 'N/A' }}
-                    </p>
-                  </div>
-                  <span class="text-sm font-medium text-red-600">
-                    {{ employee.averageDrops | number: '1.0-1' }} avg
-                  </span>
-                </div>
-                <p class="mt-1 text-xs text-red-500">
-                  Total drops: {{ employee.totalDrops | number }}
-                </p>
-              </div>
-            }
-          </div>
-        } @else {
-          <p class="text-sm text-gray-500">All employees are meeting the target.</p>
-        }
-      </app-card>
-    </div>
-  </div>
+  <!-- Data Tables -->
+  <app-card
+    title="Grouped Summary"
+    subtitle="Grouped by Date"
+    padding="sm"
+  >
+    <app-data-table
+      [columns]="groupedTableColumns"
+      [data]="groupedDataSignal"
+      [pagination]="true"
+      [pageSize]="groupedTablePageSize"
+      [showToolbar]="false"
+      [showFilters]="true"
+      [searchable]="false"
+    />
+  </app-card>
 
   <!-- Drops Data Table -->
   <app-card
     title="Drop Records"
-    subtitle="Filter each column or sort to analyse individual drop performance"
+    subtitle="Filter each column or sort to analyse your drop performance"
     padding="sm"
   >
     <div class="flex flex-col gap-4">

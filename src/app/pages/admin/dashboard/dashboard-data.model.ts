@@ -11,7 +11,7 @@ export interface DashboardDataRecord {
   'Walkup Drop Count': number;
   'Double Drop Count': number;
   'Email Address': string;
-  TotalDrops: number;
+  DropCount: number;
   Amount: number;
   Month: string;
 }

@@ -1,0 +1,191 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-wrap gap-2">
+      @for (option of rangeOptions; track option.value) {
+        <button
+          type="button"
+          class="rounded-full border px-4 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-primary-500"
+          [class.bg-primary-600]="performanceRange() === option.value"
+          [class.text-white]="performanceRange() === option.value"
+          [class.border-primary-600]="performanceRange() === option.value"
+          [class.border-gray-200]="performanceRange() !== option.value"
+          [class.text-gray-600]="performanceRange() !== option.value"
+          (click)="setRange(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <input
+        type="date"
+        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        [value]="customStart() || ''"
+        (change)="updateCustomStart($any($event.target)?.value || '')"
+      />
+      <span class="text-sm text-gray-400">to</span>
+      <input
+        type="date"
+        class="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        [value]="customEnd() || ''"
+        (change)="updateCustomEnd($any($event.target)?.value || '')"
+      />
+      <button
+        type="button"
+        class="rounded-md bg-primary-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-300 disabled:text-gray-500"
+        [disabled]="!isCustomRangeValid()"
+        (click)="applyCustomRange()"
+      >
+        Apply
+      </button>
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    @if (selectedEmployee()) {
+      <app-card title="My Performance Overview" padding="sm">
+        <ng-container *ngIf="selectedEmployee() as employee">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-white"
+                  [style.backgroundColor]="employee.avatarColor"
+                >
+                  {{ employee.initials }}
+                </div>
+                <div>
+                  <p class="text-lg font-semibold text-gray-900">{{ employee.name }}</p>
+                  <p class="text-sm text-gray-500">
+                    First Record:
+                    {{
+                      employee.hireDate
+                        ? (employee.hireDate | date: 'longDate')
+                        : 'Unknown'
+                    }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p class="text-xs uppercase text-gray-400">Drop Count</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900">
+                  {{ employee.totalDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Single drops: {{ employee.totalDrops - employee.multiDrops - employee.heavyDrops - employee.doubleDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Multi drops: {{ employee.multiDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Heavy drops: {{ employee.heavyDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Walkup drops: {{ employee.walkupDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Double drops: {{ employee.doubleDrops | number }}
+                </p>
+              </div>
+              <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p class="text-xs uppercase text-gray-400">Average / Day</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900">
+                  {{ employee.averageDropsPerDay | number: '1.0-1' }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Day Count : {{ employee.dailyTotals.size | number }}
+                </p>
+              </div>
+              <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p class="text-xs uppercase text-gray-400">Multi Drops</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900">
+                  {{ employee.multiDrops | number }}
+                </p>
+              </div>
+              <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p class="text-xs uppercase text-gray-400">Heavy Drops</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900">
+                  {{ employee.heavyDrops | number }}
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <app-chart-wrapper
+                title="Daily Drops Trend"
+                subtitle="Drops completed per day"
+                [chartData]="employeeTrendChartData()"
+                [chartOptions]="employeeTrendChartOptions"
+                [chartType]="lineChartType"
+                height="240px"
+              />
+
+              <app-chart-wrapper
+                title="Drop Distribution"
+                subtitle="Mix of drop types"
+                [chartData]="employeeDropTypeChartData()"
+                [chartOptions]="employeeDropTypeChartOptions"
+                [chartType]="pieChartType"
+                height="240px"
+              />
+            </div>
+
+            <app-chart-wrapper
+              title="Drops by Shift"
+              subtitle="Shift allocation"
+              [chartData]="employeeShiftChartData()"
+              [chartOptions]="employeeShiftChartOptions"
+              [chartType]="barChartType"
+              height="240px"
+            />
+          </div>
+        </ng-container>
+      </app-card>
+
+      <section>
+        <app-card
+          title="Grouped Summary"
+          subtitle="Grouped by Date and Name"
+          padding="sm"
+        >
+          <app-data-table
+            [columns]="groupedTableColumns"
+            [data]="groupedTableDataSignal"
+            [pagination]="true"
+            [pageSize]="groupedTablePageSize"
+            [showToolbar]="false"
+            [showFilters]="true"
+            [searchable]="false"
+          />
+        </app-card>
+      </section>
+
+      <section>
+        <app-card
+          title="Drop Records"
+          subtitle="All records ordered by date (newest first)"
+          padding="sm"
+        >
+          <app-data-table
+            [columns]="dropRecordsTableColumns"
+            [data]="dropRecordsTableDataSignal"
+            [pagination]="true"
+            [pageSize]="dropRecordsTablePageSize"
+            [showToolbar]="false"
+            [showFilters]="true"
+            [searchable]="false"
+          />
+        </app-card>
+      </section>
+    } @else {
+      <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
+        No performance data found for the selected range.
+      </div>
+    }
+  </div>
+</div>
+

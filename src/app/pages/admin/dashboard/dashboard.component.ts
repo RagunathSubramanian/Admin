@@ -5,10 +5,12 @@ import {
   computed,
   inject,
   signal,
+  effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent } from '../../shared/components/card.component';
-import { ChartWrapperComponent } from '../../shared/components/chart-wrapper.component';
+import { CardComponent } from '../../../shared/components/card.component';
+import { ChartWrapperComponent } from '../../../shared/components/chart-wrapper.component';
+import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table.component';
 import { ChartConfiguration, ChartType } from 'chart.js';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs/operators';
@@ -20,7 +22,8 @@ import {
 import {
   DashboardQueryParams,
   DashboardService,
-} from '../../core/services/dashboard.service';
+} from '../../../core/services/dashboard.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 type NumericDashboardKey =
   | 'Total Drops'
@@ -49,6 +52,17 @@ interface EmployeeAggregate {
   latestRecord: DashboardDataRecord;
 }
 
+interface GroupedDashboardRecord {
+  DATE: string;
+  'Total Drops': number;
+  'Multi Drops': number;
+  'Heavy Drops': number;
+  'Walkup Drop Count': number;
+  'Double Drop Count': number;
+  Amount: number;
+  DropCount: number;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -56,6 +70,7 @@ interface EmployeeAggregate {
     CommonModule,
     CardComponent,
     ChartWrapperComponent,
+    DataTableComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
@@ -184,22 +199,83 @@ export class DashboardComponent implements OnInit {
 
   public lineChartType: ChartType = 'line';
 
-  public lineChartData: ChartConfiguration['data'] = this.createLineChartData(
-    [],
-    [],
-  );
+  public lineChartData = computed(() => {
+    const records = this.filteredRecords();
+    if (!records.length) {
+      return this.createLineChartData([], []);
+    }
 
-  public barChartData: ChartConfiguration['data'] = this.createBarChartData(
-    [],
-    [],
-  );
+    const monthlyTotals = this.groupAndSumByDropCount(records, (record) =>
+      record.Month || this.tryGetMonthFromDate(record.DATE),
+    );
 
-  public barChartOptions: ChartConfiguration['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
+    return this.createLineChartData(
+      monthlyTotals.labels,
+      monthlyTotals.values,
+    );
+  });
+
+  public dailyTrendsChartData = computed(() => {
+    const records = this.filteredRecords();
+    if (!records.length) {
+      return this.createLineChartData([], [], 'Daily Drops', {
+        background: 'rgba(34, 197, 94, 0.1)',
+        border: 'rgba(34, 197, 94, 1)',
+      });
+    }
+
+    // Group by date for daily trends
+    const dailyMap = new Map<string, { date: Date; value: number }>();
+    
+    records.forEach((record) => {
+      const dateStr = record.DATE;
+      if (!dateStr) return;
+      
+      const dateObj = this.parseRecordDate({ DATE: dateStr } as DashboardDataRecord);
+      if (!dateObj) return;
+      
+      // Use ISO date string as key for grouping
+      const dateKey = dateObj.toISOString().split('T')[0];
+      
+      const existing = dailyMap.get(dateKey);
+      if (existing) {
+        existing.value += this.ensureNumber(record.DropCount);
+      } else {
+        dailyMap.set(dateKey, {
+          date: dateObj,
+          value: this.ensureNumber(record.DropCount),
+        });
+      }
+    });
+
+    // Sort by date and create chart data
+    const sortedDaily = Array.from(dailyMap.entries())
+      .map(([key, data]) => ({
+        label: data.date.toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+        value: data.value,
+        date: data.date,
+      }))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    return this.createLineChartData(
+      sortedDaily.map((item) => item.label),
+      sortedDaily.map((item) => item.value),
+      'Daily Drops',
+      {
+        background: 'rgba(34, 197, 94, 0.1)',
+        border: 'rgba(34, 197, 94, 1)',
+      },
+    );
+  });
+
+  public dailyTrendsChartOptions: ChartConfiguration['options'] = {
+    elements: {
+      line: {
+        tension: 0.5,
       },
     },
     scales: {
@@ -207,15 +283,41 @@ export class DashboardComponent implements OnInit {
         beginAtZero: true,
       },
     },
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    responsive: true,
+    maintainAspectRatio: false,
   };
 
-  public barChartType: ChartType = 'bar';
+  public dailyTrendsChartType: ChartType = 'line';
 
-  public dropsPerEmployeeChartData: ChartConfiguration['data'] =
-    this.createBarChartData([], [], 'Drops per Employee', {
-      background: 'rgba(147, 51, 234, 0.8)',
-      border: 'rgba(147, 51, 234, 1)',
-    });
+  public dropsPerEmployeeChartData = computed(() => {
+    const records = this.filteredRecords();
+    if (!records.length) {
+      return this.createBarChartData([], [], 'Drops per Employee', {
+        background: 'rgba(147, 51, 234, 0.8)',
+        border: 'rgba(147, 51, 234, 1)',
+      });
+    }
+
+    const employeeTotals = this.groupAndSumByDropCount(
+      records,
+      (record) => record.NAME?.trim() || 'Unknown',
+    );
+
+    return this.createBarChartData(
+      employeeTotals.labels,
+      employeeTotals.values,
+      'Drops per Employee',
+      {
+        background: 'rgba(147, 51, 234, 0.8)',
+        border: 'rgba(147, 51, 234, 1)',
+      },
+    );
+  });
   public dropsPerEmployeeChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -232,10 +334,51 @@ export class DashboardComponent implements OnInit {
   };
   public dropsPerEmployeeChartType: ChartType = 'bar';
 
-  public dropTypeChartData: ChartConfiguration['data'] = this.createPieChartData(
-    [],
-    [],
-  );
+  public dropTypeChartData = computed(() => {
+    const records = this.filteredRecords();
+    if (!records.length) {
+      return this.createPieChartData([], []);
+    }
+
+    const dropTypeTotals = [
+      {
+        label: 'Multi Drops',
+        value: this.sumNumeric(records, 'Multi Drops'),
+      },
+      {
+        label: 'Heavy Drops',
+        value: this.sumNumeric(records, 'Heavy Drops'),
+      },
+      {
+        label: 'Walkup Drops',
+        value: this.sumNumeric(records, 'Walkup Drop Count'),
+      },
+      {
+        label: 'Double Drops',
+        value: this.sumNumeric(records, 'Double Drop Count'),
+      },
+      {
+        label: 'Single Drops',
+        value: records.reduce((total, record) => total + this.ensureNumber(record.DropCount), 0) -
+               this.sumNumeric(records, 'Multi Drops') -
+               this.sumNumeric(records, 'Heavy Drops') -
+              
+               this.sumNumeric(records, 'Double Drop Count'),
+      },
+    ];
+
+    return this.createPieChartData(
+      dropTypeTotals.map((item) => item.label),
+      dropTypeTotals.map((item) => item.value),
+      [
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(126, 156, 146, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+        'rgba(27, 244, 172, 0.9)',
+      ],
+    );
+  });
   public dropTypeChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -247,13 +390,30 @@ export class DashboardComponent implements OnInit {
   };
   public dropTypeChartType: ChartType = 'pie';
 
-  public averageDropsTrendChartData: ChartConfiguration['data'] =
-    this.createLineChartData([], [], 'Average Drops per Employee');
+  public averageDropsTrendChartData = computed(() => {
+    const records = this.filteredRecords();
+    if (!records.length) {
+      return this.createLineChartData([], [], 'Average Drops per Employee');
+    }
+
+    const monthlyAverages = this.groupMonthlyAverages(records);
+    return this.createLineChartData(
+      monthlyAverages.labels,
+      monthlyAverages.values,
+      'Average Drops per Employee',
+      {
+        background: 'rgba(34, 197, 94, 0.15)',
+        border: 'rgba(34, 197, 94, 1)',
+      },
+    );
+  });
   public averageDropsTrendChartOptions: ChartConfiguration['options'];
   public averageDropsTrendChartType: ChartType = 'line';
 
   totalDrops = computed(() =>
-    this.sumNumeric(this.filteredRecords(), 'Total Drops'),
+    this.filteredRecords().reduce((total, record) => {
+      return total + this.ensureNumber(record.DropCount);
+    }, 0),
   );
   multiDrops = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Multi Drops'),
@@ -289,7 +449,7 @@ dailyTotals = computed(() =>{
         record['Email Address'] ||
         `${index}`,
       user: record.NAME?.trim() || 'Unknown driver',
-      action: `${this.ensureNumber(record['Total Drops'])} drops • Shift ${record.Shift || 'N/A'}`,
+      action: `${this.ensureNumber(record.DropCount)} drops • Shift ${record.Shift || 'N/A'}`,
       time: this.formatTimestamp(record.Timestamp || record.DATE),
     }));
   });
@@ -314,6 +474,12 @@ dailyTotals = computed(() =>{
       responsive: true,
       maintainAspectRatio: false,
     };
+
+    // Update groupedDataSignal when groupedData changes
+    effect(() => {
+      const data = this.groupedData();
+      this.groupedDataSignal.set(data);
+    });
   }
 
   topPerformer = computed(() => {
@@ -383,76 +549,22 @@ dailyTotals = computed(() =>{
         finalize(() => this.isLoading.set(false)),
       )
       .subscribe({
-        next: (data) => {
-          this.dashboardData.set(this.convertSheetToJson(data));
-         
-          this.updateCharts(this.dashboardData());
+        next: (data: DashboardDataModel) => {
+          this.dashboardData.set(data);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.error.set(this.extractErrorMessage(err));
           this.dashboardData.set([]);
-          this.updateCharts([]);
         },
       });
   }
- convertSheetToJson(sheetData: any): any[] {
-  const values: any[][] = sheetData && Array.isArray(sheetData.values) ? sheetData.values : [];
-  if (values.length === 0) return [];
 
-  const headers = values[0].map(h => h ? String(h).trim() : '');
-  const dataRows = values.slice(1); // skip headers
 
-  // Map each row to an object using headers
-  return dataRows.map(row => {
-    const obj: any = {};
-    headers.forEach((key, i) => {
-      if(row[i] !== undefined && row[i] !== null && String(row[i]).trim() !== '') {
-      obj[key || `col_${i+1}`] = row[i] !== undefined ? row[i] : '';
-      }
-    });
-    
-    return obj;
-  });
-}
-  private updateCharts(records: DashboardDataModel): void {
-    if (!records.length) {
-      this.lineChartData = this.createLineChartData([], []);
-      this.barChartData = this.createBarChartData([], []);
-      return;
-    }
-
-    const monthlyTotals = this.groupAndSum(records, (record) =>
-      record.Month || this.tryGetMonthFromDate(record.DATE),
-    );
-
-    this.lineChartData = this.createLineChartData(
-      monthlyTotals.labels,
-      monthlyTotals.values,
-    );
-
-    const shiftTotals = this.groupAndSum(
-      records,
-      (record) => record.Shift || 'Unassigned',
-      'Walkup Drop Count',
-    );
-
-    this.barChartData = this.createBarChartData(
-      shiftTotals.labels,
-      shiftTotals.values,
-      'Walkup Drops',
-      {
-        background: 'rgba(59, 130, 246, 0.8)',
-        border: 'rgba(59, 130, 246, 1)',
-      },
-    );
-
-    this.updateOperationsCharts(records);
-  }
 
   private createLineChartData(
     labels: string[],
     data: number[],
-    datasetLabel = 'Total Drops',
+    datasetLabel = 'Drop Count',
     color: { background: string; border: string } = {
       background: 'rgba(59, 130, 246, 0.1)',
       border: 'rgba(59, 130, 246, 1)',
@@ -547,6 +659,25 @@ dailyTotals = computed(() =>{
       const key = keySelector(record) || 'Unknown';
       const current = accumulator.get(key) ?? 0;
       const nextValue = current + this.ensureNumber(record[valueKey]);
+      accumulator.set(key, nextValue);
+    });
+
+    const labels = Array.from(accumulator.keys());
+    const values = labels.map((label) => accumulator.get(label) ?? 0);
+
+    return { labels, values };
+  }
+
+  private groupAndSumByDropCount(
+    records: DashboardDataModel,
+    keySelector: (record: DashboardDataRecord) => string | undefined,
+  ): { labels: string[]; values: number[] } {
+    const accumulator = new Map<string, number>();
+
+    records.forEach((record) => {
+      const key = keySelector(record) || 'Unknown';
+      const current = accumulator.get(key) ?? 0;
+      const nextValue = current + this.ensureNumber(record.DropCount);
       accumulator.set(key, nextValue);
     });
 
@@ -683,87 +814,6 @@ dailyTotals = computed(() =>{
   trackByRecord = (index: number, record: DashboardDataRecord) =>
     record.Timestamp || record.FIN || index;
 
-  private updateOperationsCharts(records: DashboardDataModel): void {
-    if (!records.length) {
-      this.dropsPerEmployeeChartData = this.createBarChartData([], [], 'Drops per Employee', {
-        background: 'rgba(147, 51, 234, 0.8)',
-        border: 'rgba(147, 51, 234, 1)',
-      });
-      this.dropTypeChartData = this.createPieChartData([], []);
-      this.averageDropsTrendChartData = this.createLineChartData(
-        [],
-        [],
-        'Average Drops per Employee',
-      );
-      return;
-    }
-
-    const employeeTotals = this.groupAndSum(
-      records,
-      (record) => record.NAME?.trim() || 'Unknown',
-      'Total Drops',
-    );
-
-    this.dropsPerEmployeeChartData = this.createBarChartData(
-      employeeTotals.labels,
-      employeeTotals.values,
-      'Drops per Employee',
-      {
-        background: 'rgba(147, 51, 234, 0.8)',
-        border: 'rgba(147, 51, 234, 1)',
-      },
-    );
-
-    const dropTypeTotals = [
-      {
-        label: 'Multi Drops',
-        value: this.sumNumeric(records, 'Multi Drops'),
-      },
-      {
-        label: 'Heavy Drops',
-        value: this.sumNumeric(records, 'Heavy Drops'),
-      },
-      {
-        label: 'Walkup Drops',
-        value: this.sumNumeric(records, 'Walkup Drop Count'),
-      },
-      {
-        label: 'Double Drops',
-        value: this.sumNumeric(records, 'Double Drop Count'),
-      },
-       {
-        label: 'Single Drops',
-        value: this.sumNumeric(records, 'Total Drops') -
-               this.sumNumeric(records, 'Multi Drops') -
-               this.sumNumeric(records, 'Heavy Drops') -
-               this.sumNumeric(records, 'Walkup Drop Count') -
-               this.sumNumeric(records, 'Double Drop Count'),
-      },
-    ];
-
-    this.dropTypeChartData = this.createPieChartData(
-      dropTypeTotals.map((item) => item.label),
-      dropTypeTotals.map((item) => item.value),
-      [
-        'rgba(59, 130, 246, 0.8)',
-        'rgba(126, 156, 146, 0.8)',
-        'rgba(245, 158, 11, 0.8)',
-        'rgba(239, 68, 68, 0.8)',
-        'rgba(27, 244, 172, 0.9)',
-      ],
-    );
-
-    const monthlyAverages = this.groupMonthlyAverages(records);
-    this.averageDropsTrendChartData = this.createLineChartData(
-      monthlyAverages.labels,
-      monthlyAverages.values,
-      'Average Drops per Employee',
-      {
-        background: 'rgba(34, 197, 94, 0.15)',
-        border: 'rgba(34, 197, 94, 1)',
-      },
-    );
-  }
 
   private groupMonthlyAverages(
     records: DashboardDataModel,
@@ -782,7 +832,7 @@ dailyTotals = computed(() =>{
           employees: new Set<string>(),
         };
 
-      entry.totalDrops += this.ensureNumber(record['Total Drops']);
+      entry.totalDrops += this.ensureNumber(record.DropCount);
       entry.employees.add(record.NAME?.trim() || 'Unknown');
       accumulator.set(key, entry);
     });
@@ -820,7 +870,7 @@ dailyTotals = computed(() =>{
           latestRecord: record,
         };
 
-      entry.totalDrops += this.ensureNumber(record['Total Drops']);
+      entry.totalDrops += this.ensureNumber(record.DropCount);
       entry.multiDrops += this.ensureNumber(record['Multi Drops']);
       entry.heavyDrops += this.ensureNumber(record['Heavy Drops']);
       entry.walkupDrops += this.ensureNumber(record['Walkup Drop Count']);
@@ -967,5 +1017,104 @@ setRange(range: PerformanceRange): void {
   }
 //#endregion
 
+  // Grouped data by DATE, NAME, FIN with summed numeric columns
+  groupedData = computed(() => {
+    const records = this.filteredRecords();
+    const groupedMap = new Map<string, GroupedDashboardRecord>();
+
+    records.forEach((record) => {
+      const date = record.DATE || 'Unknown';
+      const key = date;
+
+      const existing = groupedMap.get(key);
+      if (existing) {
+        existing['Total Drops'] += this.ensureNumber(record['Total Drops']);
+        existing['Multi Drops'] += this.ensureNumber(record['Multi Drops']);
+        existing['Heavy Drops'] += this.ensureNumber(record['Heavy Drops']);
+        existing['Walkup Drop Count'] += this.ensureNumber(record['Walkup Drop Count']);
+        existing['Double Drop Count'] += this.ensureNumber(record['Double Drop Count']);
+        existing.Amount += this.ensureNumber(record.Amount);
+        existing.DropCount += this.ensureNumber(record.DropCount);
+      } else {
+        groupedMap.set(key, {
+          DATE: date,
+          'Total Drops': this.ensureNumber(record['Total Drops']),
+          'Multi Drops': this.ensureNumber(record['Multi Drops']),
+          'Heavy Drops': this.ensureNumber(record['Heavy Drops']),
+          'Walkup Drop Count': this.ensureNumber(record['Walkup Drop Count']),
+          'Double Drop Count': this.ensureNumber(record['Double Drop Count']),
+          Amount: this.ensureNumber(record.Amount),
+          DropCount: this.ensureNumber(record.DropCount),
+        });
+      }
+    });
+
+    const groupedArray = Array.from(groupedMap.values());
+    
+    // Sort by date descending (newest first)
+    return groupedArray.sort((a, b) => {
+      const dateA = this.parseRecordDate({ DATE: a.DATE } as DashboardDataRecord);
+      const dateB = this.parseRecordDate({ DATE: b.DATE } as DashboardDataRecord);
+      
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      
+      return dateB.getTime() - dateA.getTime(); // Descending order
+    });
+  });
+
+  groupedDataSignal = signal<GroupedDashboardRecord[]>([]);
+  groupedTablePageSize = signal(10);
+
+  groupedTableColumns: DataTableColumn<GroupedDashboardRecord>[] = [
+    { key: 'DATE', label: 'Date', sortable: true, filterable: true },
+    { 
+      key: 'Total Drops', 
+      label: 'Total Drops', 
+      sortable: true,
+      render: (row: GroupedDashboardRecord) => row['Total Drops'].toLocaleString()
+    },
+    { 
+      key: 'Multi Drops', 
+      label: 'Multi Drops', 
+      sortable: true,
+      render: (row: GroupedDashboardRecord) => row['Multi Drops'].toLocaleString()
+    },
+    { 
+      key: 'Heavy Drops', 
+      label: 'Heavy Drops', 
+      sortable: true,
+      render: (row: GroupedDashboardRecord) => row['Heavy Drops'].toLocaleString()
+    },
+    { 
+      key: 'Walkup Drop Count', 
+      label: 'Walkup Drops', 
+      sortable: true,
+      render: (row: GroupedDashboardRecord) => row['Walkup Drop Count'].toLocaleString()
+    },
+    { 
+      key: 'Double Drop Count', 
+      label: 'Double Drops', 
+      sortable: true,
+      render: (row: GroupedDashboardRecord) => row['Double Drop Count'].toLocaleString()
+    },
+    { 
+      key: 'Amount', 
+      label: 'Amount', 
+      sortable: true,
+      render: (row: GroupedDashboardRecord) => new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(row.Amount)
+    },
+    { 
+      key: 'DropCount', 
+      label: 'Drop Count', 
+      sortable: true,
+      render: (row: GroupedDashboardRecord) => row.DropCount.toLocaleString()
+    },
+  ];
 }
 
