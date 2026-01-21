@@ -70,19 +70,22 @@
             {{ totalDrops() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
-            Single drops: {{ totalDrops() - multiDrops() - heavyDrops() - walkupDropCount() - doubleDropCount() | number }}
+            TOTAL NUMBER OF DROPS: {{ totalDrops() - multiDrops() - doubleDropCount() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
-            Multi drops: {{ multiDrops() | number }}
+            SBT: {{ multiDrops() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
-            Heavy drops: {{ heavyDrops() | number }}
+            HEAVYLOAD: {{ heavyDrops() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
-            Walkup drops: {{ walkupDropCount() | number }}
+            WALKUP: {{ walkupDropCount() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
-            Double drops: {{ doubleDropCount() | number }}
+            DOUBLE DROP: {{ doubleDropCount() | number }}
+          </p>
+          <p class="mt-1 text-xs text-gray-500">
+            PARCEL DELIVERY: {{ parcels() | number }}
           </p>
           <p class="mt-1 text-xs text-gray-500">
             Avg drops/day: {{ totalDrops() / dailyTotals() | number: '1.0-1' }}

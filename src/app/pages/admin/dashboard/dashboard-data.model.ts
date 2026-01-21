@@ -14,6 +14,7 @@ export interface DashboardDataRecord {
   DropCount: number;
   Amount: number;
   Month: string;
+  Parcels: number;
 }
 
 export type DashboardDataModel = DashboardDataRecord[];

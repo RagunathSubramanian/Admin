@@ -31,7 +31,8 @@ type NumericDashboardKey =
   | 'Heavy Drops'
   | 'Walkup Drop Count'
   | 'Double Drop Count'
-  | 'Amount';
+  | 'Amount'
+  | 'Parcels';
 
 interface DashboardTableColumn {
   key: keyof DashboardDataRecord;
@@ -415,6 +416,9 @@ export class DashboardComponent implements OnInit {
       return total + this.ensureNumber(record.DropCount);
     }, 0),
   );
+  totalNumberOfDrops = computed(() =>
+    this.sumNumeric(this.filteredRecords(), 'Total Drops')- this.sumNumeric(this.filteredRecords(), 'Multi Drops'),
+  );
   multiDrops = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Multi Drops'),
   );
@@ -429,6 +433,9 @@ export class DashboardComponent implements OnInit {
   );
   doubleDropCount = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Double Drop Count'),
+  );
+  parcelsCount = computed(() =>
+    this.sumNumeric(this.filteredRecords(), 'Parcels'),
   );
   activeEmployee = computed(() =>{
     const uniqueRecords = new Set(this.filteredRecords().map((record) => record.NAME)); // Use a unique field like 'NAME'
