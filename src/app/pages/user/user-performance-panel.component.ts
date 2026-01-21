@@ -38,6 +38,7 @@ interface EmployeeSummary {
   heavyDrops: number;
   walkupDrops: number;
   doubleDrops: number;
+  parcels: number;
   records: DashboardDataRecord[];
 }
 
@@ -173,6 +174,7 @@ export class UserPerformancePanelComponent {
         heavyDrops: number;
         walkupDrops: number;
         doubleDrops: number;
+        parcels: number;
         records: DashboardDataRecord[];
       }
     >();
@@ -203,6 +205,7 @@ export class UserPerformancePanelComponent {
           heavyDrops: 0,
           walkupDrops: 0,
           doubleDrops: 0,
+          parcels: 0,
           records: [],
         };
 
@@ -222,6 +225,7 @@ export class UserPerformancePanelComponent {
       aggregate.heavyDrops += this.ensureNumber(record['Heavy Drops']);
       aggregate.walkupDrops += this.ensureNumber(record['Walkup Drop Count']);
       aggregate.doubleDrops += this.ensureNumber(record['Double Drop Count']);
+      aggregate.parcels += this.ensureNumber(record['Parcels']);
       aggregate.dropTypes['Single Drops'] += this.ensureNumber(
         record['DropCount'] - record['Multi Drops'] - record['Heavy Drops']  - record['Double Drop Count'],
       );
@@ -276,6 +280,7 @@ export class UserPerformancePanelComponent {
           heavyDrops: entry.heavyDrops,
           walkupDrops: entry.walkupDrops,
           doubleDrops: entry.doubleDrops,
+          parcels: entry.parcels,
           records: entry.records,
         };
       })

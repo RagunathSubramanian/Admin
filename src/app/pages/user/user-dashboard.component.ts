@@ -30,7 +30,9 @@ type NumericDashboardKey =
   | 'Multi Drops'
   | 'Heavy Drops'
   | 'Walkup Drop Count'
-  | 'Double Drop Count';
+  | 'Double Drop Count'
+  | 'Parcels';
+
 
 interface DashboardTableColumn {
   key: keyof DashboardDataRecord;
@@ -354,6 +356,9 @@ export class UserDashboardComponent implements OnInit {
   );
   doubleDropCount = computed(() =>
     this.sumNumeric(this.filteredRecords(), 'Double Drop Count'),
+  );
+  parcels = computed(() =>
+    this.sumNumeric(this.filteredRecords(), 'Parcels'),
   );
   dailyTotals = computed(() => {
     const uniqueRecords = new Set(this.filteredRecords().map((record) => record.DATE));

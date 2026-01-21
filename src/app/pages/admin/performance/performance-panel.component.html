@@ -147,19 +147,22 @@
                   {{ employee.totalDrops | number }}
                 </p>
                 <p class="mt-1 text-xs text-gray-500">
-                  Single drops: {{ employee.totalDrops - employee.multiDrops - employee.heavyDrops - employee.doubleDrops | number }}
+                  TOTAL NUMBER OF DROPS: {{ employee.totalDrops - employee.multiDrops -  employee.doubleDrops | number }}
                 </p>
                 <p class="mt-1 text-xs text-gray-500">
-                  Multi drops: {{ employee.multiDrops | number }}
+                  SBT: {{ employee.multiDrops | number }}
                 </p>
                 <p class="mt-1 text-xs text-gray-500">
-                  Heavy drops: {{ employee.heavyDrops | number }}
+                  HEAVYLOAD: {{ employee.heavyDrops | number }}
                 </p>
                 <p class="mt-1 text-xs text-gray-500">
-                  Walkup drops: {{ employee.walkupDrops | number }}
+                  WALKUP: {{ employee.walkupDrops | number }}
                 </p>
                 <p class="mt-1 text-xs text-gray-500">
-                  Double drops: {{ employee.doubleDrops | number }}
+                  DOUBLE DROP: {{ employee.doubleDrops | number }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  PARCEL DELIVERY: {{ employee.parcels | number }}
                 </p>
                
               </div>
